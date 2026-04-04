@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Glitch Paint 95</title>
+  <link rel="stylesheet" href="https://unpkg.com/98.css" />
+  <style>
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #008080;
+      /* Win95 desktop */
+      justify-content: center;
+      align-items: center;
+      font-family: 'Pixelated MS Sans Serif', Arial;
+      overflow: auto;
+      user-select: none;
+    }
+
+    .window {
+      /* dynamic size */
+      display: inline-flex;
+      flex-direction: column;
+      margin: 16px;
+      /* give some border on tiny screens */
+    }
+
+    .window-body {
+      display: flex;
+      flex-direction: column;
+      margin: 0;
+      padding: 4px;
+      padding-top: 2px;
+      overflow: hidden;
+      background: #c0c0c0;
+    }
+
+    .menubar {
+      display: flex;
+      gap: 12px;
+      font-size: 11px;
+      margin-bottom: 4px;
+      padding-left: 2px;
+    }
+
+    .menubar span {
+      cursor: default;
+    }
+
+    .menubar span u {
+      text-decoration: underline;
+    }
+
+    .main-area {
+      display: flex;
+    }
+
+    .toolbar {
+      width: 56px;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 2px;
+      margin-right: 4px;
+    }
+
+    .tool-btn {
+      width: 25px;
+      height: 25px;
+      min-width: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #c0c0c0;
+      box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a, inset 2px 2px #dfdfdf, inset -2px -2px #808080;
+      border: none;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .tool-btn:active,
+    .tool-btn.active {
+      box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080 !important;
+      background: #dfdfdf;
+    }
+
+    .tool-btn canvas {
+      pointer-events: none;
+      image-rendering: pixelated;
+    }
+
+    .canvas-container {
+      overflow: auto;
+      background: #808080;
+      padding: 4px;
+      box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+      position: relative;
+    }
+
+    .canvas-wrapper {
+      width: 1024px;
+      height: 1024px;
+      position: relative;
+      background: #ffffff;
+      box-shadow: 1px 1px 0px #0a0a0a;
+      cursor: crosshair;
+    }
+
+    .canvas-wrapper canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      image-rendering: pixelated;
+    }
+
+    #staticCanvas {
+      pointer-events: none;
+    }
+
+    #paintCanvas {
+      touch-action: none;
+    }
+
+    .bottom-panel {
+      margin-top: 4px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .selected-colors-box {
+      width: 32px;
+      height: 32px;
+      position: relative;
+      box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080;
+      background: #c0c0c0;
+    }
+
+    .swatch {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border: 1px solid #808080;
+      box-shadow: inset -1px -1px #808080, inset 1px 1px #808080;
+      box-sizing: border-box;
+    }
+
+    #bg-swatch {
+      right: 2px;
+      bottom: 2px;
+    }
+
+    #fg-swatch {
+      left: 2px;
+      top: 2px;
+      z-index: 10;
+    }
+
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(23, 16px);
+      grid-template-rows: repeat(2, 16px);
+      gap: 0;
+      border: 1px solid #808080;
+      border-right-color: #fff;
+      border-bottom-color: #fff;
+    }
+
+    .palette-color {
+      width: 16px;
+      height: 16px;
+      box-sizing: border-box;
+      border: 1px solid;
+      border-color: #808080 #fff #fff #808080;
+      cursor: pointer;
+    }
+
+    .palette-color:active {
+      border-color: #000 #fff #fff #000;
+    }
+
+    .status-bar {
+      margin-top: 4px;
+      display: flex;
+    }
+
+    .status-bar-field {
+      padding-left: 4px;
+      margin: 0;
+      padding-top: 2px;
+      padding-bottom: 2px;
+    }
+
+    #coords-status {
+      min-width: 120px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="window">
+    <div class="title-bar">
+      <div class="title-bar-text">Glitch Paint</div>
+      <div class="title-bar-controls">
+        <button aria-label="Minimize"></button>
+        <button aria-label="Maximize"></button>
+        <button aria-label="Close"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="menubar">
+        <span><u>F</u>ile</span>
+        <span class="menu-edit"><u>E</u>dit</span>
+        <div id="edit-dropdown"
+          style="display: none; position: absolute; top: 22px; left: 36px; background: #c0c0c0; border: 1px solid #fff; border-right-color: #0a0a0a; border-bottom-color: #0a0a0a; z-index: 100; flex-direction: column; padding: 2px;">
+          <div class="menu-item" id="menu-undo" style="padding: 2px 12px; cursor: pointer;">Undo (Ctrl+Z)</div>
+          <div class="menu-item" id="menu-redo" style="padding: 2px 12px; cursor: pointer;">Redo (Ctrl+Y)</div>
+        </div>
+        <span><u>V</u>iew</span>
+        <span><u>I</u>mage</span>
+        <span><u>O</u>ptions</span>
+        <span><u>H</u>elp</span>
+      </div>
+
+      <!-- MAIN APP AREA -->
+      <div class="main-area">
+        <!-- TOOLBAR & OPTIONS -->
+        <div style="display: flex; flex-direction: column; gap: 4px; margin-right: 4px; width: 56px;">
+          <div class="toolbar tools-bar" style="margin-right: 0;">
+            <!-- Tools injected by JS -->
+          </div>
+          <div class="toolbar paints-bar" style="margin-right: 0;">
+            <!-- Paints injected by JS -->
+          </div>
+          <div class="size-options"
+            style="display: flex; flex-direction: column; gap: 4px; padding: 4px 2px; box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080; background: #c0c0c0; align-items: center;">
+            <!-- Size buttons injected by JS -->
+          </div>
+        </div>
+
+        <!-- CANVAS CONTAINER -->
+        <div class="canvas-container">
+          <div class="canvas-wrapper">
+            <canvas id="staticCanvas" width="1024" height="1024"></canvas>
+            <canvas id="paintCanvas" width="1024" height="1024"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM PANEL: COLORS -->
+      <div class="bottom-panel">
+        <div class="selected-colors-box">
+          <div id="bg-swatch" class="swatch" style="background: #ffffff;"></div>
+          <div id="fg-swatch" class="swatch" style="background: #000000;"></div>
+        </div>
+        <div class="palette-grid">
+          <!-- Palettes injected by JS -->
+        </div>
+      </div>
+
+      <!-- STATUS BAR -->
+      <div class="status-bar">
+        <p class="status-bar-field" style="flex: 1;">For Help, click Help Topics on the Help Menu.</p>
+        <p class="status-bar-field" id="coords-status">1024 x 1024</p>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // UI Setup & Tools
+    const drawingTools = [
+      { id: 'select', icon: '⬚' },
+      { id: 'fill', icon: '🪣' },
+      { id: 'pen', icon: '✏️' },
+      { id: 'rect', icon: '⬜' }
+    ];
+
+    const paintPatterns = [
+      'solid', 'eraser', 'noise', 'static-glitch', 'h-scan', 'v-scan',
+      'strobe', 'checkers', 'sine', 'matrix', 'rgb-split', 'vhs',
+      'dither', 'barcode', 'tv-roll', 'pulse', 'sparkle', 'rgb-shift',
+      'scan-glitch', 'blocks', 'zigzag', 'hypnotic',
+      'crt-warp', 'pixel-burn', 'wipe', 'static-lines', 'bit-shift',
+      'error-box', 'tape-delay', 'corrupt', 'wireframe', 'float',
+      'fx-hue', 'fx-glow', 'fx-solar', 'fx-sort', 'fx-sharp', 'fx-dither', 'fx-smudge'
+    ];
+
+    let currentTool = 'pen';
+    let currentPaint = 'solid';
+    let fgColor = '#000000';
+    let bgColor = '#ffffff';
+
+    const toolsBar = document.querySelector('.tools-bar');
+    drawingTools.forEach((tool, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'tool-btn' + (tool.id === 'pen' ? ' active' : '');
+      btn.dataset.tool = tool.id;
+      btn.title = tool.id.toUpperCase();
+      btn.innerHTML = `<span style="font-size: 14px;">${tool.icon}</span>`;
+      btn.onclick = () => {
+        toolsBar.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTool = tool.id;
+      };
+      toolsBar.appendChild(btn);
+    });
+
+    const paintsBar = document.querySelector('.paints-bar');
+    paintPatterns.forEach((paintId, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'tool-btn' + (paintId === 'solid' ? ' active' : '');
+      btn.dataset.paint = paintId;
+      btn.title = 'PAINT: ' + paintId.toUpperCase();
+
+      if (paintId.startsWith('fx-')) {
+        let fxIcon = '✨';
+        if (paintId === 'fx-hue') fxIcon = '🌈';
+        if (paintId === 'fx-solar') fxIcon = '☀️';
+        if (paintId === 'fx-sort') fxIcon = '📶';
+        if (paintId === 'fx-sharp') fxIcon = '📐';
+        if (paintId === 'fx-dither') fxIcon = '🏁';
+        if (paintId === 'fx-smudge') fxIcon = '🌀';
+        btn.innerHTML = `<span style="font-size: 14px; top: 2px; position:relative;">${fxIcon}</span>`;
+      } else {
+        btn.innerHTML = `<canvas id="icon-${paintId}" width="16" height="16"></canvas>`;
+      }
+
+      btn.onclick = () => {
+        paintsBar.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPaint = paintId;
+      };
+      paintsBar.appendChild(btn);
+    });
+
+    const msColors = [
+      '#6e2727', '#962626', '#cd2424', '#e25d26', '#e68127', '#f4aa41',
+      '#f8cd7c', '#dbae65', '#c89050', '#ab6f3b', '#82502e', '#5b3728',
+      '#33211c', '#261918', '#000000', '#121017', '#21212c', '#333443',
+      '#4c505b', '#777e86', '#9da1a4', '#cbcbcb', '#e2e2e2', '#ffffff',
+      '#f9ffb7', '#fdff90', '#f3f647', '#9bd24d', '#59b341', '#35823a',
+      '#2a5641', '#466573', '#40898e', '#34c5a3', '#41ee95', '#8fc8d6',
+      '#4f99ba', '#3577a3', '#265a86', '#1d355e', '#1b254e', '#331a3b',
+      '#662a71', '#c756be', '#e284d0', '#eebed1', '#000000', '#ffffff'
+    ];
+
+    const paletteGrid = document.querySelector('.palette-grid');
+    msColors.forEach(color => {
+      const square = document.createElement('div');
+      square.className = 'palette-color';
+      square.style.background = color;
+      square.onpointerdown = (e) => {
+        if (e.button === 2) {
+          bgColor = color;
+          document.getElementById('bg-swatch').style.background = bgColor;
+        } else {
+          fgColor = color;
+          document.getElementById('fg-swatch').style.background = fgColor;
+        }
+      };
+      // prevent context menu on right click for color grid
+      square.oncontextmenu = (e) => e.preventDefault();
+      paletteGrid.appendChild(square);
+    });
+
+    // Utility
+    function invertColor(hex) {
+      if (!hex) return '#ffffff';
+      if (hex.startsWith('rgba')) return '#ffffff'; // simplification
+      let num = parseInt(hex.slice(1), 16);
+      if (isNaN(num)) return '#ffffff';
+      let inv = 0xFFFFFF ^ num;
+      return '#' + inv.toString(16).padStart(6, '0');
+    }
+
+    // Canvas Logic
+    const staticCanvas = document.getElementById('staticCanvas');
+    const staticCtx = staticCanvas.getContext('2d', { alpha: false });
+    staticCtx.fillStyle = '#ffffff';
+    staticCtx.fillRect(0, 0, 1024, 1024);
+
+    const paintCanvas = document.getElementById('paintCanvas');
+    const ctx = paintCanvas.getContext('2d');
+
+    const rows = 86, cols = 86; // Roughly 1024 / 12
+    let grid = new Array(rows).fill(null).map(() => new Array(cols).fill(null));
+
+    // History System
+    let history = [];
+    let historyStep = -1;
+    const maxHistory = 30;
+
+    function cloneGrid() {
+      return grid.map(row => row.map(cell => cell ? { ...cell } : null));
+    }
+
+    function saveState() {
+      // Clear redo history if we make a new action
+      if (historyStep < history.length - 1) {
+        history = history.slice(0, historyStep + 1);
+      }
+      history.push({
+        imgData: staticCtx.getImageData(0, 0, 1024, 1024),
+        gridData: cloneGrid()
+      });
+      if (history.length > maxHistory) {
+        history.shift();
+      } else {
+        historyStep++;
+      }
+    }
+
+    function undo() {
+      if (historyStep > 0) {
+        historyStep--;
+        restoreState();
+      }
+    }
+
+    function redo() {
+      if (historyStep < history.length - 1) {
+        historyStep++;
+        restoreState();
+      }
+    }
+
+    function restoreState() {
+      let state = history[historyStep];
+      staticCtx.putImageData(state.imgData, 0, 0);
+      grid = state.gridData.map(row => row.map(cell => cell ? { ...cell } : null));
+    }
+
+    // Initialization
+    saveState();
+
+    let isDrawing = false;
+    let lastGrid = null;
+    let brushSize = 1;
+
+    let startX = -1, startY = -1;
+    let currX = -1, currY = -1;
+    let selection = null;
+
+    const sizeOptions = document.querySelector('.size-options');
+    [1, 2, 3, 4].forEach((s) => {
+      const btn = document.createElement('button');
+      btn.className = 'tool-btn' + (s === 1 ? ' active' : '');
+      btn.style.width = '100%';
+      btn.style.height = '16px';
+      btn.dataset.size = s;
+      btn.innerHTML = `<div style="width: ${s * 3}px; height: ${s * 3}px; background: #000;"></div>`;
+      btn.onclick = () => {
+        document.querySelectorAll('.size-options .tool-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        brushSize = s;
+      };
+      sizeOptions.appendChild(btn);
+    });
+
+    function getGridPos(e) {
+      const rect = paintCanvas.getBoundingClientRect();
+      const x = Math.floor(e.clientX - rect.left);
+      const y = Math.floor(e.clientY - rect.top);
+      return { x: Math.floor(x / 12), y: Math.floor(y / 12), px: x, py: y };
+    }
+
+    function commitCell(nx, ny, color, isEraser) {
+      if (nx >= cols || ny >= rows || nx < 0 || ny < 0) return;
+
+      // Selection Mask Clipping
+      if (selection) {
+        if (nx < selection.x || nx >= selection.x + selection.w ||
+          ny < selection.y || ny >= selection.y + selection.h) {
+          return;
+        }
+      }
+
+      grid[ny][nx] = null;
+      if (isEraser) {
+        staticCtx.fillStyle = color;
+        staticCtx.fillRect(nx * 12, ny * 12, 12, 12);
+      } else if (!currentPaint.startsWith('fx-') && currentPaint !== 'solid') {
+        grid[ny][nx] = {
+          type: currentPaint,
+          color: color,
+          offset: Math.random()
+        };
+      } else if (currentPaint.startsWith('fx-')) {
+        grid[ny][nx] = {
+          type: currentPaint,
+          color: color, // Color might not be directly used by FX, but good to keep consistent
+          offset: Math.random()
+        };
+      } else { // currentPaint === 'solid'
+        staticCtx.fillStyle = color;
+        staticCtx.fillRect(nx * 12, ny * 12, 12, 12);
+      }
+    }
+
+    function matchCell(cx, cy, targetType, targetColor) {
+      const cell = grid[cy][cx];
+      if (targetType === null) {
+        return cell === null;
+      } else {
+        return cell && cell.type === targetType && cell.color === targetColor;
+      }
+    }
+
+    function applyFillTool(pos, activeColor, isEraser) {
+      if (selection && (pos.x < selection.x || pos.x >= selection.x + selection.w || pos.y < selection.y || pos.y >= selection.y + selection.h)) return;
+
+      const targetCell = grid[pos.y][pos.x];
+      const targetType = targetCell ? targetCell.type : null;
+      const targetColor = targetCell ? targetCell.color : null;
+
+      if (targetType === currentPaint && targetColor === activeColor) return;
+      if (targetType === null && isEraser) return;
+
+      const queue = [{ x: pos.x, y: pos.y }];
+      const visited = new Array(rows).fill(false).map(() => new Array(cols).fill(false));
+      visited[pos.y][pos.x] = true;
+
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        commitCell(curr.x, curr.y, activeColor, isEraser);
+
+        const neighbors = [
+          { x: curr.x + 1, y: curr.y }, { x: curr.x - 1, y: curr.y },
+          { x: curr.x, y: curr.y + 1 }, { x: curr.x, y: curr.y - 1 }
+        ];
+
+        for (let n of neighbors) {
+          if (n.x >= 0 && n.x < cols && n.y >= 0 && n.y < rows) {
+            if (selection && (n.x < selection.x || n.x >= selection.x + selection.w || n.y < selection.y || n.y >= selection.y + selection.h)) continue;
+
+            if (!visited[n.y][n.x] && matchCell(n.x, n.y, targetType, targetColor)) {
+              visited[n.y][n.x] = true;
+              queue.push(n);
+            }
+          }
+        }
+      }
+    }
+
+    function applyPenTool(pos, activeColor, isEraser) {
+      if (lastGrid && lastGrid.x === pos.x && lastGrid.y === pos.y) return;
+      lastGrid = pos;
+      for (let dy = 0; dy < brushSize; dy++) {
+        for (let dx = 0; dx < brushSize; dx++) {
+          commitCell(pos.x + dx, pos.y + dy, activeColor, isEraser);
+        }
+      }
+    }
+
+    function getActiveColor(e) {
+      const isRightClick = e.button === 2 || (e.buttons & 2);
+      return currentPaint === 'eraser' ? bgColor : (isRightClick ? bgColor : fgColor);
+    }
+
+    paintCanvas.addEventListener('pointerdown', e => {
+      isDrawing = true;
+      lastGrid = null;
+      paintCanvas.setPointerCapture(e.pointerId);
+
+      const pos = getGridPos(e);
+      const activeColor = getActiveColor(e);
+      const isEraser = currentPaint === 'eraser';
+
+      if (pos.x < 0 || pos.x >= cols || pos.y < 0 || pos.y >= rows) return;
+
+      if (currentTool === 'pen') {
+        for (let dy = 0; dy < brushSize; dy++) {
+          for (let dx = 0; dx < brushSize; dx++) {
+            commitCell(pos.x + dx, pos.y + dy, activeColor, isEraser);
+          }
+        }
+      } else if (currentTool === 'fill') {
+        applyFillTool(pos, activeColor, isEraser);
+      } else if (currentTool === 'rect' || currentTool === 'select') {
+        startX = pos.x; startY = pos.y; currX = pos.x; currY = pos.y;
+        if (currentTool === 'select') {
+          selection = null;
+        }
+      }
+    });
+
+    // Keyboard and Menu Shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'z') undo();
+      if (e.ctrlKey && e.key === 'y') redo();
+    });
+
+    const editMenu = document.querySelector('.menu-edit');
+    const editDropdown = document.getElementById('edit-dropdown');
+    editMenu.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      editDropdown.style.display = editDropdown.style.display === 'none' ? 'flex' : 'none';
+    });
+    document.addEventListener('pointerdown', () => editDropdown.style.display = 'none');
+
+    document.getElementById('menu-undo').addEventListener('pointerdown', undo);
+    document.getElementById('menu-redo').addEventListener('pointerdown', redo);
+
+    paintCanvas.addEventListener('pointermove', e => {
+      const coords = getGridPos(e);
+      document.getElementById('coords-status').innerText = `${coords.px}, ${coords.py}`;
+      if (!isDrawing) return;
+
+      if (coords.x < 0 || coords.x >= cols || coords.y < 0 || coords.y >= rows) return;
+
+      if (currentTool === 'pen') {
+        const activeColor = getActiveColor(e);
+        const isEraser = currentPaint === 'eraser';
+        applyPenTool(coords, activeColor, isEraser);
+      } else if (currentTool === 'rect' || currentTool === 'select') {
+        currX = coords.x; currY = coords.y;
+      }
+    });
+
+    paintCanvas.addEventListener('pointerup', e => {
+      isDrawing = false;
+      paintCanvas.releasePointerCapture(e.pointerId);
+
+      if (startX !== -1) {
+        let rMinX = Math.min(startX, currX); let rMaxX = Math.max(startX, currX);
+        let rMinY = Math.min(startY, currY); let rMaxY = Math.max(startY, currY);
+
+        if (currentTool === 'rect') {
+          const activeColor = getActiveColor(e);
+          const isEraser = currentPaint === 'eraser';
+          for (let y = rMinY; y <= rMaxY; y++) {
+            for (let x = rMinX; x <= rMaxX; x++) {
+              commitCell(x, y, activeColor, isEraser);
+            }
+          }
+        } else if (currentTool === 'select') {
+          if (rMaxX - rMinX > 0 && rMaxY - rMinY > 0) {
+            selection = { x: rMinX, y: rMinY, w: rMaxX - rMinX + 1, h: rMaxY - rMinY + 1 };
+          } else {
+            selection = null;
+          }
+        }
+        startX = -1;
+      }
+
+      if (currentTool !== 'select') {
+        saveState();
+      }
+    });
+
+    paintCanvas.addEventListener('pause', e => isDrawing = false);
+
+    paintCanvas.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Rendering
+    function drawGlitchTool(targetCtx, px, py, cell, time) {
+      const { type, color, offset } = cell;
+      const t = time + offset * 1000;
+
+      switch (type) {
+        case 'solid':
+          targetCtx.fillStyle = color;
+          targetCtx.fillRect(px, py, 12, 12);
+          break;
+
+        case 'eraser':
+          targetCtx.fillStyle = bgColor;
+          targetCtx.fillRect(px, py, 12, 12);
+          // outline for UI icon clarity
+          targetCtx.strokeStyle = '#808080';
+          targetCtx.lineWidth = 1;
+          targetCtx.strokeRect(px + 0.5, py + 0.5, 11, 11);
+          break;
+
+        case 'noise':
+          for (let i = 0; i < 12; i += 3) {
+            for (let j = 0; j < 12; j += 3) {
+              if (Math.random() > 0.3) {
+                targetCtx.fillStyle = Math.random() > 0.5 ? color : invertColor(color);
+                targetCtx.fillRect(px + i, py + j, 3, 3);
+              }
+            }
+          }
+          break;
+
+        case 'h-scan':
+          targetCtx.fillStyle = color;
+          let yOffset = Math.floor(t / 30) % 12;
+          for (let i = 0; i < 3; i++) {
+            let lineY = (yOffset + i * 4) % 12;
+            targetCtx.fillRect(px, py + lineY, 12, 2);
+          }
+          break;
+
+        case 'v-scan':
+          targetCtx.fillStyle = color;
+          let xOffset = Math.floor(t / 30) % 12;
+          for (let i = 0; i < 3; i++) {
+            let lineX = (xOffset + i * 4) % 12;
+            targetCtx.fillRect(px + lineX, py, 2, 12);
+          }
+          break;
+
+        case 'strobe':
+          const st = Math.floor(t / 80) % 3;
+          if (st === 0) { targetCtx.fillStyle = color; targetCtx.fillRect(px, py, 12, 12); }
+          else if (st === 1) { targetCtx.fillStyle = invertColor(color); targetCtx.fillRect(px, py, 12, 12); }
+          break;
+
+        case 'checkers':
+          const frame = Math.floor(t / 200) % 2;
+          for (let i = 0; i < 12; i += 4) {
+            for (let j = 0; j < 12; j += 4) {
+              if (((i / 4 + j / 4) % 2) === frame) {
+                targetCtx.fillStyle = color;
+                targetCtx.fillRect(px + i, py + j, 4, 4);
+              }
+            }
+          }
+          break;
+
+        case 'sine':
+          targetCtx.fillStyle = color;
+          for (let i = 0; i < 12; i += 2) {
+            let waveY = 5 + Math.round(Math.sin((t / 200) + i * 0.5) * 4);
+            targetCtx.fillRect(px + i, py + waveY, 2, 2);
+          }
+          break;
+
+        case 'matrix':
+          targetCtx.fillStyle = color;
+          let frameT = Math.floor(t / 50 + offset * 100);
+          for (let i = 0; i < 12; i += 4) {
+            let localY = (frameT + i * 3) % 12;
+            if (localY + 3 > 12) {
+              let overflow = (localY + 3) - 12;
+              targetCtx.fillRect(px + i, py + localY, 3, 12 - localY);
+              targetCtx.fillRect(px + i, py, 3, overflow);
+            } else {
+              targetCtx.fillRect(px + i, py + localY, 3, 3);
+            }
+          }
+          break;
+
+        case 'rgb-split':
+          let shift = Math.floor(Math.random() * 3) - 1;
+          targetCtx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+          targetCtx.fillRect(px + 1 + shift, py, 10, 12);
+          targetCtx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+          targetCtx.fillRect(px + 1 - shift, py, 10, 12);
+          targetCtx.fillStyle = 'rgba(0, 0, 255, 0.5)';
+          targetCtx.fillRect(px + 1, py, 10, 12);
+          break;
+
+        case 'vhs':
+          for (let i = 0; i < 12; i += 3) {
+            if (Math.random() < 0.4) {
+              let offsetX = Math.floor(Math.random() * 4) - 2;
+              targetCtx.fillStyle = invertColor(color);
+              let startX = Math.max(0, offsetX);
+              let drawW = Math.min(12, 12 + offsetX) - startX;
+              if (drawW > 0) targetCtx.fillRect(px + startX, py + i, drawW, 2);
+            }
+          }
+          break;
+
+        case 'static-glitch':
+          if (Math.random() < 0.2) {
+            targetCtx.fillStyle = invertColor(color);
+            let rx = Math.floor(Math.random() * 6);
+            let ry = Math.floor(Math.random() * 6);
+            let rw = Math.floor(Math.random() * 6) + 2;
+            let rh = Math.floor(Math.random() * 6) + 2;
+            targetCtx.fillRect(px + rx, py + ry, rw, rh);
+          }
+          break;
+
+        case 'dither':
+          const bayer = [
+            [0, 8, 2, 10],
+            [12, 4, 14, 6],
+            [3, 11, 1, 9],
+            [15, 7, 13, 5]
+          ];
+          let thresh = (Math.floor(t / 100) % 16);
+          for (let i = 0; i < 12; i++) {
+            for (let j = 0; j < 12; j++) {
+              targetCtx.fillStyle = (bayer[j % 4][i % 4] < thresh) ? color : invertColor(color);
+              targetCtx.fillRect(px + i, py + j, 1, 1);
+            }
+          }
+          break;
+
+        case 'barcode':
+          let bcOffset = Math.floor(t / 40) % 12;
+          targetCtx.fillStyle = color;
+          for (let i = 0; i < 12; i += 3) {
+            let width = (i * 7 + bcOffset) % 4;
+            let xOffset = (i * 3 + bcOffset) % 12;
+            targetCtx.fillRect(px + xOffset, py, width, 12);
+          }
+          break;
+
+        case 'tv-roll':
+          let rollY = Math.floor(t / 20) % 12;
+          targetCtx.fillStyle = color;
+          targetCtx.fillRect(px, py + rollY, 12, 4);
+          if (rollY > 8) {
+            targetCtx.fillRect(px, py, 12, rollY - 8);
+          }
+          break;
+
+        case 'pulse':
+          let pSize = Math.floor(t / 100) % 6;
+          targetCtx.fillStyle = color;
+          targetCtx.fillRect(px + 6 - pSize, py + 6 - pSize, pSize * 2, pSize * 2);
+          if (pSize > 2) {
+            targetCtx.fillStyle = invertColor(color);
+            targetCtx.fillRect(px + 6 - (pSize - 2), py + 6 - (pSize - 2), (pSize - 2) * 2, (pSize - 2) * 2);
+          }
+          break;
+
+        case 'sparkle':
+          targetCtx.fillStyle = color;
+          targetCtx.fillRect(px, py, 12, 12);
+          targetCtx.fillStyle = '#ffffff';
+          if (Math.random() < 0.2) {
+            let sx = Math.floor(Math.random() * 12);
+            let sy = Math.floor(Math.random() * 12);
+            targetCtx.fillRect(px + sx, py + sy, 1, 1);
+            if (sx > 0) targetCtx.fillRect(px + sx - 1, py + sy, 3, 1);
+            if (sy > 0) targetCtx.fillRect(px + sx, py + sy - 1, 1, 3);
+          }
+          break;
+
+        case 'rgb-shift':
+          let phase = (t / 1000) * Math.PI * 2;
+          let rxOffset = Math.sin(phase) * 3 + 3;
+          let gxOffset = Math.sin(phase + 2) * 3 + 3;
+          let bxOffset = Math.sin(phase + 4) * 3 + 3;
+          targetCtx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+          targetCtx.fillRect(px + rxOffset, py, 4, 12);
+          targetCtx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+          targetCtx.fillRect(px + gxOffset, py, 4, 12);
+          targetCtx.fillStyle = 'rgba(0, 0, 255, 0.5)';
+          targetCtx.fillRect(px + bxOffset, py, 4, 12);
+          break;
+
+        case 'scan-glitch':
+          for (let j = 0; j < 12; j += 2) {
+            let shake = (Math.random() < 0.1 && Math.sin(t / 100) > 0) ? Math.floor(Math.random() * 4) - 2 : 0;
+            targetCtx.fillStyle = color;
+            targetCtx.fillRect(px + shake, py + j, 12, 2);
+          }
+          break;
+
+        case 'blocks':
+          let blockFrame = Math.floor(t / 150);
+          for (let i = 0; i < 12; i += 4) {
+            for (let j = 0; j < 12; j += 4) {
+              if (((i * 3 + j * 7 + blockFrame) % 5) < 2) {
+                targetCtx.fillStyle = color;
+                if (i + 4 <= 12 && j + 4 <= 12) targetCtx.fillRect(px + i, py + j, 4, 4);
+              }
+            }
+          }
+          break;
+
+        case 'zigzag':
+          targetCtx.fillStyle = color;
+          let zzOffset = Math.floor(t / 50) % 12;
+          for (let j = 0; j < 12; j++) {
+            let zzX = (j + zzOffset) % 6;
+            if (zzX > 3) zzX = 6 - zzX;
+            targetCtx.fillRect(px + zzX * 2, py + j, 2, 1);
+          }
+          break;
+
+        case 'hypnotic':
+          let hypFrame = Math.floor(t / 100) % 6;
+          for (let r = 6; r > 0; r--) {
+            targetCtx.fillStyle = (r % 2 === hypFrame % 2) ? color : invertColor(color);
+            targetCtx.fillRect(px + 6 - r, py + 6 - r, r * 2, r * 2);
+          }
+          break;
+
+        case 'crt-warp':
+          targetCtx.fillStyle = color;
+          for (let j = 0; j < 12; j += 3) {
+            let bow = Math.sin((j / 12) * Math.PI) * 2;
+            let offsetWarp = Math.sin(t / 300 + j * 0.5) * bow;
+            targetCtx.fillRect(px + 1 + offsetWarp, py + j, 10, 3);
+          }
+          break;
+
+        case 'pixel-burn':
+          if (Math.random() < 0.3) {
+            let rPx = Math.floor(Math.random() * 12);
+            let rPy = Math.floor(Math.random() * 12);
+            targetCtx.fillStyle = color;
+            targetCtx.fillRect(px + rPx, py + rPy, 2, 2);
+            targetCtx.fillStyle = invertColor(color);
+            targetCtx.fillRect(px + rPx + 1, py + rPy + 1, 1, 1);
+          }
+          break;
+
+        case 'wipe':
+          let wPos = Math.floor(t / 50) % 24 - 12;
+          targetCtx.fillStyle = color;
+          if (wPos > -12 && wPos < 12) {
+            targetCtx.fillRect(px, py, wPos, 12);
+          } else if (wPos >= 12) {
+            targetCtx.fillRect(px, py, 12, 12);
+          }
+          break;
+
+        case 'static-lines':
+          if (Math.random() < 0.5) {
+            targetCtx.fillStyle = color;
+            targetCtx.fillRect(px, py + Math.floor(t / 50) % 12, 12, 1);
+            if (Math.random() < 0.2) targetCtx.fillRect(px, py + Math.floor(t / 30) % 12, 12, 1);
+          }
+          break;
+
+        case 'bit-shift':
+          targetCtx.fillStyle = color;
+          let bShift = (Math.floor(t / 150) % 2 === 0) ? 2 : -2;
+          targetCtx.fillRect(px + bShift, py, 12 - Math.abs(bShift), 12);
+          break;
+
+        case 'error-box':
+          targetCtx.fillStyle = color;
+          targetCtx.fillRect(px, py, 12, 12);
+          let eFrame = Math.floor(t / 200) % 2;
+          if (eFrame === 0) {
+            targetCtx.clearRect(px + 2, py + 2, 8, 8);
+            targetCtx.fillStyle = invertColor(color);
+            targetCtx.fillRect(px + 4, py + 4, 4, 4);
+          }
+          break;
+
+        case 'tape-delay':
+          targetCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+          targetCtx.fillRect(px, py, 12, 12);
+          targetCtx.fillStyle = color;
+          targetCtx.globalAlpha = 1.0;
+          let dOff = Math.floor(t / 80) % 4;
+          targetCtx.fillRect(px + dOff, py + dOff, 12 - dOff * 2, 12 - dOff * 2);
+          break;
+
+        case 'corrupt':
+          targetCtx.fillStyle = invertColor(color);
+          for (let i = 0; i < 3; i++) {
+            let cx = Math.floor(Math.random() * 10);
+            let cy = Math.floor(Math.random() * 10);
+            targetCtx.fillRect(px + cx, py + cy, (cx % 3) + 1, (cy % 3) + 1);
+          }
+          break;
+
+        case 'wireframe':
+          targetCtx.strokeStyle = color;
+          targetCtx.lineWidth = 1;
+          targetCtx.strokeRect(px + 1, py + 1, 10, 10);
+          targetCtx.beginPath();
+          targetCtx.moveTo(px + 1, py + 1); targetCtx.lineTo(px + 11, py + 11);
+          targetCtx.moveTo(px + 11, py + 1); targetCtx.lineTo(px + 1, py + 11);
+          targetCtx.stroke();
+          break;
+
+        case 'float':
+          targetCtx.fillStyle = color;
+          let fOff = Math.round(Math.sin(t / 200) * 3);
+          targetCtx.fillRect(px + 4, py + 4 + fOff, 4, 4);
+          break;
+      }
+    }
+
+    function rgbToHsl(r, g, b) {
+      r /= 255, g /= 255, b /= 255;
+      let max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      if (max == min) { h = s = 0; }
+      else {
+        let d = max - min; s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; case b: h = (r - g) / d + 4; break; } h /= 6;
+      }
+      return [h, s, l];
+    }
+    function hslToRgb(h, s, l) {
+      let r, g, b;
+      if (s == 0) r = g = b = l;
+      else {
+        function hue2rgb(p, q, t) {
+          if (t < 0) t += 1; if (t > 1) t -= 1;
+          if (t < 1 / 6) return p + (q - p) * 6 * t;
+          if (t < 1 / 2) return q;
+          if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+          return p;
+        }
+        let q = l < 0.5 ? l * (1 + s) : l + s - l * s; let p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1 / 3);
+      }
+      return [r * 255, g * 255, b * 255];
+    }
+
+    function processAreaEffect(areaCtx, sx, sy, sw, sh, fxId, time) {
+      let imgData = areaCtx.getImageData(sx, sy, sw, sh);
+      let data = imgData.data;
+
+      if (fxId === 'fx-hue') {
+        for (let i = 0; i < data.length; i += 4) {
+          let hsl = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          hsl[0] = (hsl[0] + (time / 3000)) % 1.0;
+          let rgb = hslToRgb(hsl[0], hsl[1], hsl[2]);
+          data[i] = rgb[0]; data[i + 1] = rgb[1]; data[i + 2] = rgb[2];
+        }
+      } else if (fxId === 'fx-solar') {
+        for (let i = 0; i < data.length; i += 4) {
+          let thold = 127 + Math.sin(time / 500) * 50;
+          data[i] = data[i] > thold ? 255 - data[i] : data[i];
+          data[i + 1] = data[i + 1] > thold ? 255 - data[i + 1] : data[i + 1];
+          data[i + 2] = data[i + 2] > thold ? 255 - data[i + 2] : data[i + 2];
+        }
+      } else if (fxId === 'fx-dither') {
+        for (let y = 0; y < sh; y++) {
+          for (let x = 0; x < sw; x++) {
+            let idx = (y * sw + x) * 4;
+            let oldR = data[idx]; let oldG = data[idx + 1]; let oldB = data[idx + 2];
+            let newR = oldR < 128 ? 0 : 255; let newG = oldG < 128 ? 0 : 255; let newB = oldB < 128 ? 0 : 255;
+            data[idx] = newR; data[idx + 1] = newG; data[idx + 2] = newB;
+            let errR = oldR - newR; let errG = oldG - newG; let errB = oldB - newB;
+            const distributeErr = (dx, dy, factor) => {
+              if (x + dx >= 0 && x + dx < sw && y + dy >= 0 && y + dy < sh) {
+                let i = ((y + dy) * sw + (x + dx)) * 4;
+                data[i] += errR * factor; data[i + 1] += errG * factor; data[i + 2] += errB * factor;
+              }
+            };
+            distributeErr(1, 0, 7 / 16); distributeErr(-1, 1, 3 / 16); distributeErr(0, 1, 5 / 16); distributeErr(1, 1, 1 / 16);
+          }
+        }
+      } else if (fxId === 'fx-sort') {
+        let sortOffset = Math.sin(time / 400) * 0.5 + 0.5;
+        for (let y = 0; y < sh; y++) {
+          let rowPixels = [];
+          for (let x = 0; x < sw; x++) {
+            let i = (y * sw + x) * 4; rowPixels.push({ r: data[i], g: data[i + 1], b: data[i + 2], a: data[i + 3] });
+          }
+          rowPixels.sort((a, b) => {
+            let w1 = (a.r + a.g + a.b); let w2 = (b.r + b.g + b.b);
+            return sortOffset > 0.5 ? w1 - w2 : w2 - w1;
+          });
+          for (let x = 0; x < sw; x++) {
+            let i = (y * sw + x) * 4;
+            data[i] = rowPixels[x].r; data[i + 1] = rowPixels[x].g; data[i + 2] = rowPixels[x].b; data[i + 3] = rowPixels[x].a;
+          }
+        }
+      } else if (fxId === 'fx-glow') {
+        let tempData = new Uint8ClampedArray(data); let rad = 4;
+        let pulse = Math.abs(Math.sin(time / 400)) * 0.8 + 0.2;
+        for (let y = rad; y < sh - rad; y++) {
+          for (let x = rad; x < sw - rad; x++) {
+            let i = (y * sw + x) * 4; let tr = 0, tg = 0, tb = 0;
+            for (let dy = -rad; dy <= rad; dy++) {
+              for (let dx = -rad; dx <= rad; dx++) {
+                let sIdx = ((y + dy) * sw + (x + dx)) * 4; tr += tempData[sIdx]; tg += tempData[sIdx + 1]; tb += tempData[sIdx + 2];
+              }
+            }
+            let count = Math.pow(rad * 2 + 1, 2);
+            data[i] = Math.min(255, data[i] + tr / count * pulse); data[i + 1] = Math.min(255, data[i + 1] + tg / count * pulse); data[i + 2] = Math.min(255, data[i + 2] + tb / count * pulse);
+          }
+        }
+      } else if (fxId === 'fx-sharp') {
+        let tempData = new Uint8ClampedArray(data);
+        let intensity = Math.sin(time / 200) * 2 + 5;
+        const kernel = [0, -1, 0, -1, intensity, -1, 0, -1, 0];
+        for (let y = 1; y < sh - 1; y++) {
+          for (let x = 1; x < sw - 1; x++) {
+            let i = (y * sw + x) * 4; let r = 0, g = 0, b = 0;
+            for (let ky = -1; ky <= 1; ky++) {
+              for (let kx = -1; kx <= 1; kx++) {
+                let kIdx = ((ky + 1) * 3 + (kx + 1)); let pIdx = ((y + ky) * sw + (x + kx)) * 4;
+                r += tempData[pIdx] * kernel[kIdx]; g += tempData[pIdx + 1] * kernel[kIdx]; b += tempData[pIdx + 2] * kernel[kIdx];
+              }
+            }
+            data[i] = Math.min(255, Math.max(0, r)); data[i + 1] = Math.min(255, Math.max(0, g)); data[i + 2] = Math.min(255, Math.max(0, b));
+          }
+        }
+      } else if (fxId === 'fx-smudge') {
+        let tempData = new Uint8ClampedArray(data);
+        let dirX = Math.round(Math.cos(time / 300) * 2);
+        let dirY = Math.round(Math.sin(time / 200) * 2);
+        for (let y = 2; y < sh - 2; y++) {
+          for (let x = 2; x < sw - 2; x++) {
+            let clampX = Math.min(Math.max(x + dirX, 0), sw - 1);
+            let clampY = Math.min(Math.max(y + dirY, 0), sh - 1);
+            let srcIdx = (clampY * sw + clampX) * 4;
+            let dstIdx = (y * sw + x) * 4;
+            data[dstIdx] = tempData[srcIdx]; data[dstIdx + 1] = tempData[srcIdx + 1]; data[dstIdx + 2] = tempData[srcIdx + 2];
+          }
+        }
+      }
+      areaCtx.putImageData(imgData, sx, sy);
+    }
+
+    function render(time) {
+      ctx.clearRect(0, 0, 1024, 1024);
+
+      // 1) First pass: Draw standard glitches, collect individual fx cells
+      let activeFxCells = [];
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const cell = grid[y][x];
+          if (cell) {
+            if (cell.type.startsWith('fx-')) {
+              activeFxCells.push({ x, y, type: cell.type });
+            } else {
+              drawGlitchTool(ctx, x * 12, y * 12, cell, time);
+            }
+          }
+        }
+      }
+
+      // 2) Second pass: Process fx cells using flattened background+glitch composite
+      if (activeFxCells.length > 0) {
+        let compositeCtx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+        compositeCtx.canvas.width = 1024; compositeCtx.canvas.height = 1024;
+        compositeCtx.drawImage(staticCanvas, 0, 0);
+        compositeCtx.drawImage(paintCanvas, 0, 0);
+
+        activeFxCells.forEach(cell => {
+          processAreaEffect(compositeCtx, cell.x * 12, cell.y * 12, 12, 12, cell.type, time);
+        });
+
+        // Re-draw processed regions to exactly where the fx cells live
+        activeFxCells.forEach(cell => {
+          ctx.drawImage(compositeCtx.canvas, cell.x * 12, cell.y * 12, 12, 12, cell.x * 12, cell.y * 12, 12, 12);
+        });
+      }
+
+      if (isDrawing && currentTool === 'rect' && startX !== -1) {
+        let rMinX = Math.min(startX, currX); let rMaxX = Math.max(startX, currX);
+        let rMinY = Math.min(startY, currY); let rMaxY = Math.max(startY, currY);
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillRect(rMinX * 12, rMinY * 12, (rMaxX - rMinX + 1) * 12, (rMaxY - rMinY + 1) * 12);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(rMinX * 12, rMinY * 12, (rMaxX - rMinX + 1) * 12, (rMaxY - rMinY + 1) * 12);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(rMinX * 12, rMinY * 12, (rMaxX - rMinX + 1) * 12, (rMaxY - rMinY + 1) * 12);
+        ctx.setLineDash([]);
+      }
+
+      if (selection) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(selection.x * 12, selection.y * 12, selection.w * 12, selection.h * 12);
+
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.lineDashOffset = -(time / 50);
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(selection.x * 12, selection.y * 12, selection.w * 12, selection.h * 12);
+        ctx.setLineDash([]);
+      } else if (isDrawing && currentTool === 'select' && startX !== -1) {
+        let rMinX = Math.min(startX, currX); let rMaxX = Math.max(startX, currX);
+        let rMinY = Math.min(startY, currY); let rMaxY = Math.max(startY, currY);
+
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(rMinX * 12, rMinY * 12, (rMaxX - rMinX + 1) * 12, (rMaxY - rMinY + 1) * 12);
+
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.lineDashOffset = -(time / 50);
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(rMinX * 12, rMinY * 12, (rMaxX - rMinX + 1) * 12, (rMaxY - rMinY + 1) * 12);
+        ctx.setLineDash([]);
+      }
+
+      // Animate toolbar icons
+      paintPatterns.forEach(paintId => {
+        const c = document.getElementById(`icon-${paintId}`);
+        if (c) {
+          const btx = c.getContext('2d');
+          btx.clearRect(0, 0, 16, 16);
+          const dummyCell = { type: paintId, color: fgColor, offset: 0 };
+          drawGlitchTool(btx, 2, 2, dummyCell, time);
+        }
+      });
+
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+  </script>
+</body>
+
+</html>
