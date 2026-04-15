@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <title>Glitch Paint 95</title>
   <link rel="stylesheet" href="https://unpkg.com/98.css" />
+  <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.min.js"></script>
   <style>
     body,
     html {
@@ -214,8 +215,12 @@
       </div>
     </div>
     <div class="window-body">
-      <div class="menubar">
-        <span><u>F</u>ile</span>
+      <div class="menubar" style="position: relative;">
+        <span class="menu-file"><u>F</u>ile</span>
+        <div id="file-dropdown"
+          style="display: none; position: absolute; top: 22px; left: 0px; background: #c0c0c0; border: 1px solid #fff; border-right-color: #0a0a0a; border-bottom-color: #0a0a0a; z-index: 100; flex-direction: column; padding: 2px; min-width: 140px;">
+          <div class="menu-item" id="menu-save-gif" style="padding: 2px 12px; cursor: pointer;">Save as GIF...</div>
+        </div>
         <span class="menu-edit"><u>E</u>dit</span>
         <div id="edit-dropdown"
           style="display: none; position: absolute; top: 22px; left: 36px; background: #c0c0c0; border: 1px solid #fff; border-right-color: #0a0a0a; border-bottom-color: #0a0a0a; z-index: 100; flex-direction: column; padding: 2px;">
@@ -226,6 +231,18 @@
         <span><u>I</u>mage</span>
         <span><u>O</u>ptions</span>
         <span><u>H</u>elp</span>
+      </div>
+      <!-- GIF export progress overlay -->
+      <div id="gif-progress-overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center;">
+        <div class="window" style="margin:0; min-width:320px;">
+          <div class="title-bar"><div class="title-bar-text">Saving GIF...</div></div>
+          <div class="window-body" style="padding:16px;">
+            <p id="gif-status-text" style="margin:0 0 8px 0; font-size:11px;">Capturing frames...</p>
+            <div style="width:100%; height:20px; box-shadow:inset -1px -1px #fff, inset 1px 1px #0a0a0a; background:#c0c0c0; padding:2px;">
+              <div id="gif-progress-bar" style="width:0%; height:100%; background:#000080;"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- MAIN APP AREA -->
@@ -597,16 +614,153 @@
       if (e.ctrlKey && e.key === 'y') redo();
     });
 
+    function closeAllMenus() {
+      editDropdown.style.display = 'none';
+      fileDropdown.style.display = 'none';
+    }
+
+    const fileMenu = document.querySelector('.menu-file');
+    const fileDropdown = document.getElementById('file-dropdown');
+    fileMenu.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      editDropdown.style.display = 'none';
+      fileDropdown.style.display = fileDropdown.style.display === 'none' ? 'flex' : 'none';
+    });
+
     const editMenu = document.querySelector('.menu-edit');
     const editDropdown = document.getElementById('edit-dropdown');
     editMenu.addEventListener('pointerdown', (e) => {
       e.stopPropagation();
+      fileDropdown.style.display = 'none';
       editDropdown.style.display = editDropdown.style.display === 'none' ? 'flex' : 'none';
     });
-    document.addEventListener('pointerdown', () => editDropdown.style.display = 'none');
+    document.addEventListener('pointerdown', () => closeAllMenus());
 
     document.getElementById('menu-undo').addEventListener('pointerdown', undo);
     document.getElementById('menu-redo').addEventListener('pointerdown', redo);
+
+    // ── GIF Export ──────────────────────────────────────────
+    document.getElementById('menu-save-gif').addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      closeAllMenus();
+      exportGIF();
+    });
+
+    function renderFrameToCanvas(fakeTime) {
+      // Render one full composite frame at a given timestamp onto a temporary canvas
+      let tmpPaint = document.createElement('canvas');
+      tmpPaint.width = 1024; tmpPaint.height = 1024;
+      let tmpCtx = tmpPaint.getContext('2d');
+
+      // Draw standard glitch cells, collect fx cells
+      let fxCells = [];
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const cell = grid[y][x];
+          if (cell) {
+            if (cell.type.startsWith('fx-')) {
+              fxCells.push({ x, y, type: cell.type });
+            } else {
+              drawGlitchTool(tmpCtx, x * 12, y * 12, cell, fakeTime);
+            }
+          }
+        }
+      }
+
+      // Process fx cells
+      if (fxCells.length > 0) {
+        let compCtx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+        compCtx.canvas.width = 1024; compCtx.canvas.height = 1024;
+        compCtx.drawImage(staticCanvas, 0, 0);
+        compCtx.drawImage(tmpPaint, 0, 0);
+        fxCells.forEach(cell => {
+          processAreaEffect(compCtx, cell.x * 12, cell.y * 12, 12, 12, cell.type, fakeTime);
+        });
+        fxCells.forEach(cell => {
+          tmpCtx.drawImage(compCtx.canvas, cell.x * 12, cell.y * 12, 12, 12, cell.x * 12, cell.y * 12, 12, 12);
+        });
+      }
+
+      // Final composite: static background + animated overlay
+      let finalCanvas = document.createElement('canvas');
+      finalCanvas.width = 1024; finalCanvas.height = 1024;
+      let fCtx = finalCanvas.getContext('2d');
+      fCtx.drawImage(staticCanvas, 0, 0);
+      fCtx.drawImage(tmpPaint, 0, 0);
+      return finalCanvas;
+    }
+
+    async function exportGIF() {
+      const overlay = document.getElementById('gif-progress-overlay');
+      const statusText = document.getElementById('gif-status-text');
+      const progressBar = document.getElementById('gif-progress-bar');
+      overlay.style.display = 'flex';
+
+      const totalFrames = 60;     // ~3 seconds of animation at 50ms/frame
+      const frameDelay = 50;      // ms between frames in the GIF
+      const baseTime = performance.now();
+
+      // Fetch the worker script from CDN and create a blob URL
+      statusText.textContent = 'Initializing encoder...';
+      let workerBlobUrl;
+      try {
+        const resp = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+        const blob = await resp.blob();
+        workerBlobUrl = URL.createObjectURL(blob);
+      } catch (err) {
+        alert('Failed to load GIF encoder worker. Check your internet connection.');
+        overlay.style.display = 'none';
+        return;
+      }
+
+      const gif = new GIF({
+        workers: 2,
+        quality: 10,
+        width: 1024,
+        height: 1024,
+        workerScript: workerBlobUrl,
+        repeat: 0  // loop forever
+      });
+
+      // Capture frames
+      let firstFrameCanvas = null;
+      for (let i = 0; i < totalFrames; i++) {
+        statusText.textContent = `Capturing frame ${i + 1} / ${totalFrames}...`;
+        progressBar.style.width = Math.round(((i + 1) / (totalFrames + 1)) * 50) + '%';
+
+        const fakeTime = baseTime + i * frameDelay;
+        const frameCanvas = renderFrameToCanvas(fakeTime);
+        gif.addFrame(frameCanvas, { delay: frameDelay, copy: true });
+
+        if (i === 0) firstFrameCanvas = frameCanvas;
+
+        // Yield to browser so progress bar updates
+        await new Promise(r => setTimeout(r, 0));
+      }
+
+      // Duplicate first frame at the end for seamless loop
+      gif.addFrame(firstFrameCanvas, { delay: frameDelay, copy: true });
+
+      statusText.textContent = 'Encoding GIF...';
+      progressBar.style.width = '50%';
+
+      gif.on('progress', p => {
+        progressBar.style.width = (50 + Math.round(p * 50)) + '%';
+      });
+
+      gif.on('finished', (blob) => {
+        URL.revokeObjectURL(workerBlobUrl);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'glitch-paint.gif';
+        a.click();
+        URL.revokeObjectURL(url);
+        overlay.style.display = 'none';
+      });
+
+      gif.render();
+    }
 
     paintCanvas.addEventListener('pointermove', e => {
       const coords = getGridPos(e);
