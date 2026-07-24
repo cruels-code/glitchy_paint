@@ -3,235 +3,436 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Glitch Paint 95</title>
+  <title>Win95 Glitch Suite - Paint, Mosh, Sort & Depth</title>
   <link rel="stylesheet" href="https://unpkg.com/98.css" />
   <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.min.js"></script>
   <style>
-    body,
-    html {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #008080;
-      /* Win95 desktop */
-      justify-content: center;
-      align-items: center;
-      font-family: 'Pixelated MS Sans Serif', Arial;
-      overflow: auto;
-      user-select: none;
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Pixelated MS Sans Serif', 'MS Sans Serif', Arial, sans-serif; }
+    
+    /* ── Win95 Desktop ───────────────────────── */
+    #desktop {
+      width: 100%; height: calc(100% - 28px);
+      background: #008080;
+      position: relative; overflow: hidden;
     }
-
-    .window {
-      /* dynamic size */
-      display: inline-flex;
-      flex-direction: column;
-      margin: 16px;
-      /* give some border on tiny screens */
+    #taskbar {
+      height: 28px; background: #c0c0c0;
+      border-top: 1px solid #fff;
+      box-shadow: inset 1px 0 #fff;
+      display: flex; align-items: center;
+      padding: 2px; gap: 4px;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      z-index: 9999;
     }
-
-    .window-body {
-      display: flex;
-      flex-direction: column;
-      margin: 0;
-      padding: 4px;
-      padding-top: 2px;
-      overflow: hidden;
+    #start-btn {
+      font-weight: bold; font-size: 11px;
+      padding: 2px 4px; height: 22px; min-width: 54px;
+      display: flex; align-items: center; gap: 4px;
+      box-shadow: inset 1px 1px #fff, inset -1px -1px #808080, 1px 1px #000;
+      border: 1px solid #dfdfdf;
+      outline: none; cursor: pointer;
+    }
+    #start-btn:active {
+      box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+    }
+    #taskbar-clock {
+      margin-left: auto; font-size: 11px; padding: 2px 6px;
+      height: 22px; display: flex; align-items: center;
+      box-shadow: inset -1px -1px #fff, inset 1px 1px #808080;
       background: #c0c0c0;
+      min-width: 70px; justify-content: center;
     }
-
-    .menubar {
-      display: flex;
-      gap: 12px;
-      font-size: 11px;
-      margin-bottom: 4px;
-      padding-left: 2px;
-    }
-
-    .menubar span {
-      cursor: default;
-    }
-
-    .menubar span u {
-      text-decoration: underline;
-    }
-
-    .main-area {
-      display: flex;
-    }
-
-    .toolbar {
-      width: 56px;
-      display: flex;
-      flex-wrap: wrap;
-      align-content: flex-start;
-      gap: 2px;
-      margin-right: 4px;
-    }
-
-    .tool-btn {
-      width: 25px;
-      height: 25px;
-      min-width: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #c0c0c0;
-      box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a, inset 2px 2px #dfdfdf, inset -2px -2px #808080;
-      border: none;
-      outline: none;
+    .taskbar-item {
+      font-size: 11px; padding: 2px 6px; height: 22px;
+      min-width: 110px; max-width: 160px; text-align: left;
+      display: flex; align-items: center; gap: 4px;
+      box-shadow: inset 1px 1px #fff, inset -1px -1px #808080, 1px 1px #000;
+      background: #c0c0c0; border: 1px solid #dfdfdf;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       cursor: pointer;
     }
+    .taskbar-item.active {
+      box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+      background: #e0e0e0;
+      font-weight: bold;
+    }
 
-    .tool-btn:active,
-    .tool-btn.active {
+    /* ── Start Menu ──────────────────────────── */
+    #start-menu {
+      position: fixed; bottom: 28px; left: 2px;
+      width: 195px; background: #c0c0c0;
+      border: 2px solid #fff; border-right-color: #000; border-bottom-color: #000;
+      display: none; flex-direction: row;
+      z-index: 10000; box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+    }
+    .start-menu-sidebar {
+      width: 25px; background: linear-gradient(180deg, #808080, #000080);
+      display: flex; align-items: flex-end; justify-content: center;
+      padding-bottom: 8px; flex-shrink: 0;
+    }
+    .start-menu-sidebar span {
+      transform: rotate(-90deg); color: #fff;
+      font-weight: bold; font-size: 16px; white-space: nowrap;
+      font-family: 'MS Sans Serif', Arial; transform-origin: center;
+      margin-bottom: 45px;
+    }
+    .start-menu-list { flex: 1; display: flex; flex-direction: column; padding: 2px; }
+    .start-menu-item {
+      padding: 6px 8px; display: flex; align-items: center; gap: 8px;
+      font-size: 11px; cursor: pointer; user-select: none;
+    }
+    .start-menu-item:hover { background: #000080; color: #fff; }
+    .start-menu-item b { width: 16px; text-align: center; display: inline-block; }
+    .start-menu-divider { height: 1px; background: #808080; border-bottom: 1px solid #fff; margin: 2px 4px; }
+
+    /* ── Desktop Icon ────────────────────────── */
+    .desktop-icon {
+      position: absolute;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 2px; cursor: pointer; width: 75px; text-align: center;
+      padding: 5px; user-select: none;
+    }
+    .desktop-icon.selected .icon-label { background: #000080; color: #fff; border: 1px dotted #fff; }
+    .desktop-icon .icon-img {
+      width: 32px; height: 32px; font-size: 24px;
+      display: flex; justify-content: center; align-items: center;
+      image-rendering: pixelated;
+    }
+    .icon-label {
+      font-size: 11px; color: #fff; padding: 1px 2px;
+      margin-top: 2px; text-shadow: 1px 1px 1px #000;
+    }
+
+    /* ── Generic App Windows ────────────────── */
+    .app-window {
+      position: absolute; display: none; flex-direction: column;
+      min-width: 340px; min-height: 260px; z-index: 100;
+    }
+    .app-window .title-bar { cursor: move; flex-shrink: 0; }
+    .app-window .window-body {
+      display: flex; flex-direction: column;
+      margin: 0; padding: 4px; padding-top: 2px;
+      overflow: hidden; background: #c0c0c0;
+      flex: 1;
+    }
+
+    /* Resize handles */
+    .resize-handle { position: absolute; z-index: 200; }
+    .rh-n { top: -4px; left: 4px; right: 4px; height: 6px; cursor: n-resize; }
+    .rh-s { bottom: -4px; left: 4px; right: 4px; height: 6px; cursor: s-resize; }
+    .rh-e { right: -4px; top: 4px; bottom: 4px; width: 6px; cursor: e-resize; }
+    .rh-w { left: -4px; top: 4px; bottom: 4px; width: 6px; cursor: w-resize; }
+    .rh-ne { top: -4px; right: -4px; width: 10px; height: 10px; cursor: ne-resize; }
+    .rh-nw { top: -4px; left: -4px; width: 10px; height: 10px; cursor: nw-resize; }
+    .rh-se { bottom: -4px; right: -4px; width: 10px; height: 10px; cursor: se-resize; }
+    .rh-sw { bottom: -4px; left: -4px; width: 10px; height: 10px; cursor: sw-resize; }
+
+    /* ── Paint internals ─────────────────────── */
+    .menubar {
+      display: flex; gap: 12px; font-size: 11px;
+      margin-bottom: 4px; padding-left: 2px; user-select: none;
+    }
+    .menubar span { cursor: pointer; }
+    .menubar span u { text-decoration: underline; }
+
+    .main-area { display: flex; flex: 1; overflow: hidden; }
+
+    .toolbar {
+      width: 56px; display: flex; flex-wrap: wrap;
+      align-content: flex-start; gap: 2px; margin-right: 4px;
+    }
+    .tool-btn {
+      width: 25px; height: 25px; min-width: 0; padding: 0;
+      display: flex; justify-content: center; align-items: center;
+      background: #c0c0c0;
+      box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a, inset 2px 2px #dfdfdf, inset -2px -2px #808080;
+      border: none; outline: none; cursor: pointer;
+    }
+    .tool-btn:active, .tool-btn.active {
       box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080 !important;
       background: #dfdfdf;
     }
-
-    .tool-btn canvas {
-      pointer-events: none;
-      image-rendering: pixelated;
-    }
+    .tool-btn canvas { pointer-events: none; image-rendering: pixelated; }
 
     .canvas-container {
-      overflow: auto;
-      background: #808080;
-      padding: 4px;
+      overflow: auto; background: #808080; padding: 4px;
       box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
-      position: relative;
-    }
-
-    .canvas-wrapper {
-      width: 1024px;
-      height: 1024px;
-      position: relative;
-      background: #ffffff;
-      box-shadow: 1px 1px 0px #0a0a0a;
-      cursor: crosshair;
-    }
-
-    .canvas-wrapper canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      image-rendering: pixelated;
-    }
-
-    #staticCanvas {
-      pointer-events: none;
-    }
-
-    #paintCanvas {
-      touch-action: none;
-    }
-
-    .bottom-panel {
-      margin-top: 4px;
+      position: relative; flex: 1;
       display: flex;
-      gap: 8px;
-      align-items: center;
     }
+    .canvas-wrapper {
+      position: relative; background: #ffffff;
+      box-shadow: 1px 1px 0px #0a0a0a; cursor: crosshair;
+      margin: auto; flex-shrink: 0;
+    }
+    .canvas-wrapper canvas {
+      position: absolute; top: 0; left: 0; image-rendering: pixelated;
+    }
+    #staticCanvas { pointer-events: none; }
+    #paintCanvas { touch-action: none; }
 
+    .bottom-panel { margin-top: 4px; display: flex; gap: 8px; align-items: center; }
     .selected-colors-box {
-      width: 32px;
-      height: 32px;
-      position: relative;
+      width: 32px; height: 32px; position: relative;
       box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080;
       background: #c0c0c0;
     }
-
     .swatch {
-      position: absolute;
-      width: 14px;
-      height: 14px;
+      position: absolute; width: 14px; height: 14px;
       border: 1px solid #808080;
       box-shadow: inset -1px -1px #808080, inset 1px 1px #808080;
-      box-sizing: border-box;
     }
-
-    #bg-swatch {
-      right: 2px;
-      bottom: 2px;
-    }
-
-    #fg-swatch {
-      left: 2px;
-      top: 2px;
-      z-index: 10;
-    }
-
+    #bg-swatch { right: 2px; bottom: 2px; }
+    #fg-swatch { left: 2px; top: 2px; z-index: 10; }
     .palette-grid {
-      display: grid;
-      grid-template-columns: repeat(23, 16px);
-      grid-template-rows: repeat(2, 16px);
-      gap: 0;
-      border: 1px solid #808080;
-      border-right-color: #fff;
-      border-bottom-color: #fff;
+      display: grid; grid-template-columns: repeat(23, 16px);
+      grid-template-rows: repeat(2, 16px); gap: 0;
+      border: 1px solid #808080; border-right-color: #fff; border-bottom-color: #fff;
     }
-
     .palette-color {
-      width: 16px;
-      height: 16px;
-      box-sizing: border-box;
-      border: 1px solid;
-      border-color: #808080 #fff #fff #808080;
-      cursor: pointer;
+      width: 16px; height: 16px; box-sizing: border-box;
+      border: 1px solid; border-color: #808080 #fff #fff #808080; cursor: pointer;
+    }
+    .palette-color:active { border-color: #000 #fff #fff #000; }
+    .status-bar { margin-top: 4px; display: flex; font-size: 11px; }
+    .status-bar-field { padding-left: 4px; margin: 0; padding-top: 2px; padding-bottom: 2px; }
+    #coords-status { min-width: 120px; }
+
+    /* Dialog overlay */
+    .dialog-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.3); z-index: 20000;
+      justify-content: center; align-items: center;
+    }
+    .dialog-overlay .window { margin: 0; }
+
+    .menu-save-as:hover .save-as-dropdown { display: flex !important; }
+
+    /* ── Win95 High-Visibility Checkbox ── */
+    input[type="checkbox"].win95-chk {
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      width: 16px !important;
+      height: 16px !important;
+      min-width: 16px !important;
+      min-height: 16px !important;
+      background: #ffffff !important;
+      border: none !important;
+      box-shadow: inset -1px -1px #ffffff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #000000 !important;
+      margin: 0 6px 0 0 !important;
+      padding: 0 !important;
+      position: relative !important;
+      cursor: pointer !important;
+      outline: none !important;
+      flex-shrink: 0 !important;
+      display: inline-block !important;
+      vertical-align: middle !important;
     }
 
-    .palette-color:active {
-      border-color: #000 #fff #fff #000;
+    input[type="checkbox"].win95-chk:checked {
+      background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-6' stroke='%23000000' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center center no-repeat !important;
     }
 
-    .status-bar {
-      margin-top: 4px;
-      display: flex;
+    input[type="checkbox"].win95-chk:focus {
+      outline: 1px dotted #000000 !important;
     }
 
-    .status-bar-field {
-      padding-left: 4px;
-      margin: 0;
-      padding-top: 2px;
-      padding-bottom: 2px;
+    /* ── App Layout Styles ── */
+    .app-window .window-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    
+    .app-toolbar {
+      display: flex; gap: 4px; padding: 3px; background: #c0c0c0;
+      border-bottom: 1px solid #808080; align-items: center; flex-wrap: wrap;
+    }
+    .app-toolbar button {
+      font-size: 11px; height: 24px; padding: 2px 8px; display: inline-flex;
+      align-items: center; gap: 4px; cursor: pointer;
+    }
+    .app-toolbar .btn-accent-big {
+      background: #000080; color: #fff; font-weight: bold;
+      box-shadow: inset 1px 1px #4040ff, inset -1px -1px #000040;
+    }
+    .app-toolbar .btn-accent-big:active {
+      box-shadow: inset 1px 1px #000040, inset -1px -1px #4040ff;
     }
 
-    #coords-status {
-      min-width: 120px;
+    .app-main-layout {
+      display: flex; flex: 1; overflow: hidden; gap: 0; padding-top: 4px; position: relative;
     }
+
+    .app-sidebar {
+      width: 330px; flex-shrink: 0; display: flex; flex-direction: column;
+      background: #c0c0c0; overflow-y: auto; padding-right: 6px; gap: 6px;
+    }
+
+    /* Vertical Resizable Divider */
+    .app-divider {
+      width: 7px;
+      background: #c0c0c0;
+      box-shadow: inset 1px 0 #ffffff, inset -1px 0 #808080, 1px 0 #000000;
+      cursor: col-resize;
+      flex-shrink: 0;
+      user-select: none;
+      z-index: 10;
+      height: 100%;
+    }
+    .app-divider:hover, .app-divider.dragging {
+      background: #000080;
+    }
+
+    .mosh-section-header {
+      font-weight: bold; font-size: 11px; color: #000080; background: #d0d0d0;
+      padding: 3px 6px; border: 1px solid #808080; margin-top: 4px; margin-bottom: 2px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .mosh-fx-card {
+      border: 1px solid #808080; border-right-color: #fff; border-bottom-color: #fff;
+      background: #c0c0c0; padding: 6px; margin-bottom: 4px; font-size: 11px;
+      transition: background 0.1s ease, border-color 0.1s ease;
+      user-select: none;
+    }
+
+    .mosh-fx-card.active-card {
+      background: #dfdfdf;
+      border-color: #000080 #ffffff #ffffff #000080;
+    }
+
+    .mosh-fx-card.dragging {
+      opacity: 0.4;
+      border: 2px dashed #000080 !important;
+    }
+
+    .mosh-fx-card.drag-over {
+      border-top: 3px solid #000080 !important;
+    }
+
+    .mosh-fx-header {
+      display: flex; align-items: center; justify-content: space-between;
+      font-weight: bold; font-size: 11px; margin-bottom: 4px;
+    }
+
+    .mosh-drag-handle {
+      cursor: grab;
+      font-size: 14px;
+      color: #555;
+      user-select: none;
+      padding: 0 4px;
+      display: inline-block;
+      letter-spacing: -1px;
+    }
+    .mosh-drag-handle:active { cursor: grabbing; }
+
+    .mosh-fx-title {
+      cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+    }
+
+    .mosh-slider-group {
+      display: flex; flex-direction: column; gap: 2px; margin-top: 4px;
+    }
+    .mosh-slider-label {
+      display: flex; justify-content: space-between; font-size: 10px; color: #222; margin-top: 2px;
+    }
+    .mosh-slider-group input[type="range"] {
+      width: 100%; height: 14px; margin: 1px 0; cursor: pointer;
+    }
+
+    .app-viewport {
+      flex: 1; display: flex; justify-content: center; align-items: center;
+      background: #303030; overflow: auto; padding: 8px; position: relative;
+      box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+    }
+
+    .app-viewport canvas {
+      max-width: 100%; max-height: 100%; object-fit: contain;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.5); background: #000;
+      image-rendering: pixelated;
+    }
+
+    .mosh-rec-dot {
+      display: inline-block; width: 8px; height: 8px; background: #ff0000;
+      border-radius: 50%; animation: pulse-rec 1s infinite alternate;
+    }
+    @keyframes pulse-rec { 0% { opacity: 0.2; } 100% { opacity: 1; } }
   </style>
 </head>
 
 <body>
 
-  <div class="window">
-    <div class="title-bar">
+<!-- ══════════ WIN95 DESKTOP ══════════ -->
+<div id="desktop">
+  <!-- Desktop Shortcuts -->
+  <div class="desktop-icon" id="desktop-shortcut-paint" style="top: 10px; left: 10px;">
+    <div class="icon-img">🎨</div>
+    <div class="icon-label">Glitch Paint</div>
+  </div>
+
+  <div class="desktop-icon" id="desktop-shortcut-mosh" style="top: 90px; left: 10px;">
+    <div class="icon-img">📹</div>
+    <div class="icon-label">PixelMosh</div>
+  </div>
+
+  <div class="desktop-icon" id="desktop-shortcut-sort" style="top: 170px; left: 10px;">
+    <div class="icon-img">📶</div>
+    <div class="icon-label">PixelSort</div>
+  </div>
+
+  <div class="desktop-icon" id="desktop-shortcut-depth" style="top: 250px; left: 10px;">
+    <div class="icon-img">🧊</div>
+    <div class="icon-label">PixelDepth</div>
+  </div>
+
+  <!-- ══════════ PAINT WINDOW ══════════ -->
+  <div id="paint-window" class="window app-window" style="left: 40px; top: 20px; width: 950px; height: 740px;">
+    <div class="resize-handle rh-n" data-dir="n"></div>
+    <div class="resize-handle rh-s" data-dir="s"></div>
+    <div class="resize-handle rh-e" data-dir="e"></div>
+    <div class="resize-handle rh-w" data-dir="w"></div>
+    <div class="resize-handle rh-ne" data-dir="ne"></div>
+    <div class="resize-handle rh-nw" data-dir="nw"></div>
+    <div class="resize-handle rh-se" data-dir="se"></div>
+    <div class="resize-handle rh-sw" data-dir="sw"></div>
+
+    <div class="title-bar" id="paint-title-bar">
       <div class="title-bar-text">Glitch Paint</div>
       <div class="title-bar-controls">
-        <button aria-label="Minimize"></button>
-        <button aria-label="Maximize"></button>
-        <button aria-label="Close"></button>
+        <button aria-label="Minimize" class="win-min-btn"></button>
+        <button aria-label="Maximize" class="win-max-btn"></button>
+        <button aria-label="Close" class="win-close-btn"></button>
       </div>
     </div>
     <div class="window-body">
       <div class="menubar" style="position: relative;">
         <span class="menu-file"><u>F</u>ile</span>
         <div id="file-dropdown"
-          style="display: none; position: absolute; top: 22px; left: 0px; background: #c0c0c0; border: 1px solid #fff; border-right-color: #0a0a0a; border-bottom-color: #0a0a0a; z-index: 100; flex-direction: column; padding: 2px; min-width: 140px;">
-          <div class="menu-item" id="menu-save-gif" style="padding: 2px 12px; cursor: pointer;">Save as GIF...</div>
+          style="display: none; position: absolute; top: 18px; left: 0px; background: #c0c0c0; border: 1px solid #fff; border-right-color: #0a0a0a; border-bottom-color: #0a0a0a; z-index: 100; flex-direction: column; padding: 2px; min-width: 140px;">
+          <div class="menu-item menu-save-as" style="padding: 2px 12px; cursor: default; position: relative; display: flex; justify-content: space-between;">
+            <span>Save as</span><span>▶</span>
+            <div class="save-as-dropdown" style="display: none; position: absolute; top: -3px; left: 100%; background: #c0c0c0; border: 1px solid #fff; border-right-color: #0a0a0a; border-bottom-color: #0a0a0a; z-index: 101; flex-direction: column; padding: 2px; min-width: 80px;">
+              <div class="menu-item" id="menu-save-gif" style="padding: 2px 12px; cursor: pointer;">GIF</div>
+            </div>
+          </div>
+          <div class="start-menu-divider"></div>
+          <div class="menu-item" onclick="closeApp('paint-window')" style="padding: 2px 12px; cursor: pointer;">Exit</div>
         </div>
         <span class="menu-edit"><u>E</u>dit</span>
         <div id="edit-dropdown"
-          style="display: none; position: absolute; top: 22px; left: 36px; background: #c0c0c0; border: 1px solid #fff; border-right-color: #0a0a0a; border-bottom-color: #0a0a0a; z-index: 100; flex-direction: column; padding: 2px;">
+          style="display: none; position: absolute; top: 18px; left: 36px; background: #c0c0c0; border: 1px solid #fff; border-right-color: #0a0a0a; border-bottom-color: #0a0a0a; z-index: 100; flex-direction: column; padding: 2px;">
           <div class="menu-item" id="menu-undo" style="padding: 2px 12px; cursor: pointer;">Undo (Ctrl+Z)</div>
           <div class="menu-item" id="menu-redo" style="padding: 2px 12px; cursor: pointer;">Redo (Ctrl+Y)</div>
         </div>
         <span><u>V</u>iew</span>
-        <span><u>I</u>mage</span>
+        <span class="menu-image"><u>I</u>mage</span>
+        <div id="image-dropdown"
+          style="display: none; position: absolute; top: 18px; left: 100px; background: #c0c0c0; border: 1px solid #fff; border-right-color: #0a0a0a; border-bottom-color: #0a0a0a; z-index: 100; flex-direction: column; padding: 2px; min-width: 140px;">
+          <div class="menu-item" id="menu-canvas-size" style="padding: 2px 12px; cursor: pointer;">Canvas Size...</div>
+        </div>
         <span><u>O</u>ptions</span>
         <span><u>H</u>elp</span>
       </div>
+
       <!-- GIF export progress overlay -->
       <div id="gif-progress-overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center;">
         <div class="window" style="margin:0; min-width:320px;">
@@ -247,1116 +448,2710 @@
 
       <!-- MAIN APP AREA -->
       <div class="main-area">
-        <!-- TOOLBAR & OPTIONS -->
-        <div style="display: flex; flex-direction: column; gap: 4px; margin-right: 4px; width: 56px;">
-          <div class="toolbar tools-bar" style="margin-right: 0;">
-            <!-- Tools injected by JS -->
-          </div>
-          <div class="toolbar paints-bar" style="margin-right: 0;">
-            <!-- Paints injected by JS -->
-          </div>
+        <div style="display: flex; flex-direction: column; gap: 4px; margin-right: 4px; width: 60px; flex-shrink: 0; overflow-y: auto; overflow-x: hidden; padding-right: 2px;">
+          <div class="toolbar tools-bar" style="margin-right: 0; width: 56px;"></div>
+          <div class="toolbar paints-bar" style="margin-right: 0; width: 56px;"></div>
           <div class="size-options"
-            style="display: flex; flex-direction: column; gap: 4px; padding: 4px 2px; box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080; background: #c0c0c0; align-items: center;">
-            <!-- Size buttons injected by JS -->
+            style="display: flex; flex-direction: column; gap: 4px; padding: 4px 2px; box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080; background: #c0c0c0; align-items: center; margin-bottom: 4px;">
           </div>
         </div>
 
-        <!-- CANVAS CONTAINER -->
         <div class="canvas-container">
-          <div class="canvas-wrapper">
-            <canvas id="staticCanvas" width="1024" height="1024"></canvas>
-            <canvas id="paintCanvas" width="1024" height="1024"></canvas>
+          <div class="canvas-wrapper" id="canvas-wrapper">
+            <canvas id="staticCanvas"></canvas>
+            <canvas id="paintCanvas"></canvas>
           </div>
         </div>
       </div>
 
-      <!-- BOTTOM PANEL: COLORS -->
       <div class="bottom-panel">
         <div class="selected-colors-box">
           <div id="bg-swatch" class="swatch" style="background: #ffffff;"></div>
           <div id="fg-swatch" class="swatch" style="background: #000000;"></div>
         </div>
-        <div class="palette-grid">
-          <!-- Palettes injected by JS -->
-        </div>
+        <div class="palette-grid"></div>
       </div>
 
-      <!-- STATUS BAR -->
       <div class="status-bar">
         <p class="status-bar-field" style="flex: 1;">For Help, click Help Topics on the Help Menu.</p>
-        <p class="status-bar-field" id="coords-status">1024 x 1024</p>
+        <p class="status-bar-field" id="coords-status"></p>
       </div>
-
     </div>
   </div>
 
-  <script>
-    // UI Setup & Tools
-    const drawingTools = [
-      { id: 'select', icon: '⬚' },
-      { id: 'fill', icon: '🪣' },
-      { id: 'pen', icon: '✏️' },
-      { id: 'rect', icon: '⬜' }
-    ];
+  <!-- ══════════ PIXELMOSH WINDOW ══════════ -->
+  <div id="mosh-window" class="window app-window" style="left: 80px; top: 30px; width: 1060px; height: 760px;">
+    <div class="resize-handle rh-n" data-dir="n"></div>
+    <div class="resize-handle rh-s" data-dir="s"></div>
+    <div class="resize-handle rh-e" data-dir="e"></div>
+    <div class="resize-handle rh-w" data-dir="w"></div>
+    <div class="resize-handle rh-ne" data-dir="ne"></div>
+    <div class="resize-handle rh-nw" data-dir="nw"></div>
+    <div class="resize-handle rh-se" data-dir="se"></div>
+    <div class="resize-handle rh-sw" data-dir="sw"></div>
 
-    const paintPatterns = [
-      'solid', 'eraser', 'noise', 'static-glitch', 'h-scan', 'v-scan',
-      'strobe', 'checkers', 'sine', 'matrix', 'rgb-split', 'vhs',
-      'dither', 'barcode', 'tv-roll', 'pulse', 'sparkle', 'rgb-shift',
-      'scan-glitch', 'blocks', 'zigzag', 'hypnotic',
-      'crt-warp', 'pixel-burn', 'wipe', 'static-lines', 'bit-shift',
-      'error-box', 'tape-delay', 'corrupt', 'wireframe', 'float',
-      'fx-hue', 'fx-glow', 'fx-solar', 'fx-sort', 'fx-sharp', 'fx-dither', 'fx-smudge'
-    ];
+    <div class="title-bar" id="mosh-title-bar">
+      <div class="title-bar-text">PixelMosh 95</div>
+      <div class="title-bar-controls">
+        <button aria-label="Minimize" class="win-min-btn"></button>
+        <button aria-label="Maximize" class="win-max-btn"></button>
+        <button aria-label="Close" class="win-close-btn"></button>
+      </div>
+    </div>
 
-    let currentTool = 'pen';
-    let currentPaint = 'solid';
-    let fgColor = '#000000';
-    let bgColor = '#ffffff';
+    <div class="window-body">
+      <div class="menubar" style="position: relative;">
+        <span onclick="document.getElementById('mosh-file-input').click()"><u>F</u>ile</span>
+        <span onclick="moshRandomize()"><u>M</u>osh!</span>
+        <span onclick="moshResetAll()"><u>R</u>eset</span>
+        <span onclick="moshExportImage()"><u>E</u>xport</span>
+        <span><u>H</u>elp</span>
+      </div>
 
-    const toolsBar = document.querySelector('.tools-bar');
-    drawingTools.forEach((tool, i) => {
-      const btn = document.createElement('button');
-      btn.className = 'tool-btn' + (tool.id === 'pen' ? ' active' : '');
-      btn.dataset.tool = tool.id;
-      btn.title = tool.id.toUpperCase();
-      btn.innerHTML = `<span style="font-size: 14px;">${tool.icon}</span>`;
-      btn.onclick = () => {
-        toolsBar.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentTool = tool.id;
-      };
-      toolsBar.appendChild(btn);
-    });
+      <div class="app-toolbar">
+        <button onclick="document.getElementById('mosh-file-input').click()">📁 Load Media</button>
+        <button id="mosh-webcam-btn" onclick="toggleMoshWebcam()">📷 Webcam</button>
+        <button class="btn-accent-big" onclick="moshRandomize()">⚡ MOSH!</button>
+        <button class="btn-accent-big" onclick="moshRandomize()">🎲 Randomize</button>
+        <button onclick="moshResetAll()">🔄 Reset FX</button>
+        <button id="mosh-play-btn" onclick="toggleMoshPause()">⏯️ Pause</button>
+        <button onclick="moshExportImage()">🖼️ Save PNG</button>
+        <button onclick="moshExportGIF()">🎞️ Save GIF</button>
+        <button id="mosh-rec-btn" onclick="toggleMoshVideoRecord()">🎥 Record Video</button>
+        <input type="file" id="mosh-file-input" accept="image/*,video/*" style="display:none;" onchange="handleMoshFileUpload(event)">
+      </div>
 
-    const paintsBar = document.querySelector('.paints-bar');
-    paintPatterns.forEach((paintId, i) => {
-      const btn = document.createElement('button');
-      btn.className = 'tool-btn' + (paintId === 'solid' ? ' active' : '');
-      btn.dataset.paint = paintId;
-      btn.title = 'PAINT: ' + paintId.toUpperCase();
+      <div class="app-main-layout">
+        <div class="app-sidebar" id="mosh-sidebar">
+          <div class="mosh-fx-card" style="background:#c0c0c0; border-color:#fff #808080 #808080 #fff;">
+            <div style="font-weight:bold; color:#000080; margin-bottom:4px;">Media & Presets</div>
+            <div style="font-size:11px; display:flex; flex-direction:column; gap:4px;">
+              <label>Preset Style:</label>
+              <select id="mosh-preset-select" style="width:100%; font-size:11px;" onchange="applyMoshPreset(this.value)">
+                <option value="default">Default Clean</option>
+                <option value="vcr">VHS Bad TV 1995</option>
+                <option value="cyber">Cyber Jitter Glitch</option>
+                <option value="melt">Smear Liquify Melt</option>
+                <option value="pixelhell">8-Bit Matrix Corrupt</option>
+                <option value="luna">Luna Mesh Rainbow</option>
+                <option value="tilt">Tilt Shift Chromatic</option>
+                <option value="linocut">Linocut Woodblock Edges</option>
+              </select>
 
-      if (paintId.startsWith('fx-')) {
-        let fxIcon = '✨';
-        if (paintId === 'fx-hue') fxIcon = '🌈';
-        if (paintId === 'fx-solar') fxIcon = '☀️';
-        if (paintId === 'fx-sort') fxIcon = '📶';
-        if (paintId === 'fx-sharp') fxIcon = '📐';
-        if (paintId === 'fx-dither') fxIcon = '🏁';
-        if (paintId === 'fx-smudge') fxIcon = '🌀';
-        btn.innerHTML = `<span style="font-size: 14px; top: 2px; position:relative;">${fxIcon}</span>`;
-      } else {
-        btn.innerHTML = `<canvas id="icon-${paintId}" width="16" height="16"></canvas>`;
+              <label style="margin-top:2px;">Built-in Sample:</label>
+              <select id="mosh-sample-select" style="width:100%; font-size:11px;" onchange="loadMoshSample(this.value)">
+                <option value="bars">Color Test Bars</option>
+                <option value="grid">Synthwave Grid</option>
+                <option value="noise">Static Noise</option>
+                <option value="gradient">Cyber Gradient</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:2px 4px; background:#d0d0d0; border:1px solid #808080;">
+            <span style="font-weight:bold; font-size:11px; color:#000080;">Effect Modules (Drag ⋮⋮ to reorder)</span>
+            <button style="font-size:9px; padding:1px 4px;" onclick="moshToggleAllFX(false)">Clear All</button>
+          </div>
+
+          <!-- FX modules -->
+          <div class="mosh-fx-card" data-fx-id="badtv" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-badtv-on" checked onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-badtv-on" class="mosh-fx-title">📺 Bad TV</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Tracking Error:</span><span id="fx-badtv-track-val">30</span></div>
+              <input type="range" id="fx-badtv-track" min="0" max="100" value="30" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Static Noise:</span><span id="fx-badtv-noise-val">25</span></div>
+              <input type="range" id="fx-badtv-noise" min="0" max="100" value="25" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Signal Roll:</span><span id="fx-badtv-roll-val">15</span></div>
+              <input type="range" id="fx-badtv-roll" min="0" max="50" value="15" oninput="moshUpdate()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="jitter" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-jitter-on" checked onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-jitter-on" class="mosh-fx-title">⚡ Jitter Shake</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Amount:</span><span id="fx-jitter-amt-val">15px</span></div>
+              <input type="range" id="fx-jitter-amt" min="0" max="50" value="15" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Speed:</span><span id="fx-jitter-speed-val">50</span></div>
+              <input type="range" id="fx-jitter-speed" min="1" max="100" value="50" oninput="moshUpdate()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="glitch" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-glitch-on" onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-glitch-on" class="mosh-fx-title">💾 Hard / Soft Glitch</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Glitch Mode:</span></div>
+              <select id="fx-glitch-mode" style="width:100%; font-size:10px;" onchange="moshUpdate()">
+                <option value="hard">Hard Block Corruption</option>
+                <option value="soft">Soft Data-Mosh Tear</option>
+              </select>
+              <div class="mosh-slider-label"><span>Corruption Rate:</span><span id="fx-glitch-rate-val">40</span></div>
+              <input type="range" id="fx-glitch-rate" min="0" max="100" value="40" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Block Size:</span><span id="fx-glitch-block-val">16px</span></div>
+              <input type="range" id="fx-glitch-block" min="4" max="64" value="16" oninput="moshUpdate()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="melt" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-melt-on" onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-melt-on" class="mosh-fx-title">💧 Smear / Melt</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Direction:</span></div>
+              <select id="fx-melt-dir" style="width:100%; font-size:10px;" onchange="moshUpdate()">
+                <option value="down">Melt Downward</option>
+                <option value="right">Smear Right</option>
+              </select>
+              <div class="mosh-slider-label"><span>Smear Length:</span><span id="fx-melt-len-val">20px</span></div>
+              <input type="range" id="fx-melt-len" min="1" max="60" value="20" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Viscosity Flow:</span><span id="fx-melt-visc-val">50</span></div>
+              <input type="range" id="fx-melt-visc" min="0" max="100" value="50" oninput="moshUpdate()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="wobble" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-wobble-on" onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-wobble-on" class="mosh-fx-title">〰️ Wobble / Shake</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Wave Speed:</span><span id="fx-wobble-speed-val">40</span></div>
+              <input type="range" id="fx-wobble-speed" min="1" max="100" value="40" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Amplitude:</span><span id="fx-wobble-amp-val">15px</span></div>
+              <input type="range" id="fx-wobble-amp" min="0" max="50" value="15" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Frequency:</span><span id="fx-wobble-freq-val">10</span></div>
+              <input type="range" id="fx-wobble-freq" min="1" max="40" value="10" oninput="moshUpdate()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="slices" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-slices-on" checked onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-slices-on" class="mosh-fx-title">✂️ Slices</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Slice Count:</span><span id="fx-slices-count-val">18</span></div>
+              <input type="range" id="fx-slices-count" min="2" max="60" value="18" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Offset Distance:</span><span id="fx-slices-offset-val">25px</span></div>
+              <input type="range" id="fx-slices-offset" min="0" max="100" value="25" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Orientation:</span></div>
+              <select id="fx-slices-dir" style="width:100%; font-size:10px;" onchange="moshUpdate()">
+                <option value="h">Horizontal Strips</option>
+                <option value="v">Vertical Strips</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="8bit" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-8bit-on" onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-8bit-on" class="mosh-fx-title">🕹️ 8bit / Dot Matrix</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Pixel Resolution:</span><span id="fx-8bit-res-val">6px</span></div>
+              <input type="range" id="fx-8bit-res" min="1" max="32" value="6" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Palette Style:</span></div>
+              <select id="fx-8bit-palette" style="width:100%; font-size:10px;" onchange="moshUpdate()">
+                <option value="win95">Win95 16-Color Palette</option>
+                <option value="gameboy">GameBoy 4-Green Palette</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="halftone" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-halftone-on" onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-halftone-on" class="mosh-fx-title">⚪ Half Tone / Linocut</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Filter Style:</span></div>
+              <select id="fx-half-style" style="width:100%; font-size:10px;" onchange="moshUpdate()">
+                <option value="dot">Print Half Tone Dots</option>
+                <option value="linocut">Woodcut / Linocut Lines</option>
+              </select>
+              <div class="mosh-slider-label"><span>Pattern Scale:</span><span id="fx-half-scale-val">6</span></div>
+              <input type="range" id="fx-half-scale" min="2" max="30" value="6" oninput="moshUpdate()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="vhs" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-vhs-on" checked onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-vhs-on" class="mosh-fx-title">📼 VHS / Super Eight</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Tape Noise / Grain:</span><span id="fx-vhs-grain-val">40</span></div>
+              <input type="range" id="fx-vhs-grain" min="0" max="100" value="40" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Color Bleeding:</span><span id="fx-vhs-bleed-val">20</span></div>
+              <input type="range" id="fx-vhs-bleed" min="0" max="50" value="20" oninput="moshUpdate()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="luna" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-luna-on" onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-luna-on" class="mosh-fx-title">🌈 Luna Mesh / Collido</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Overlay Mode:</span></div>
+              <select id="fx-luna-mode" style="width:100%; font-size:10px;" onchange="moshUpdate()">
+                <option value="mesh">Luna Psychedelic Mesh</option>
+                <option value="rainbow">Shifting Rainbow Gradient</option>
+              </select>
+              <div class="mosh-slider-label"><span>Pattern Scale:</span><span id="fx-luna-scale-val">20</span></div>
+              <input type="range" id="fx-luna-scale" min="5" max="50" value="20" oninput="moshUpdate()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="rgb" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-rgb-on" checked onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-rgb-on" class="mosh-fx-title">🔴🟢🔵 RGB Shift</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Shift Distance:</span><span id="fx-rgb-amount-val">15px</span></div>
+              <input type="range" id="fx-rgb-amount" min="0" max="60" value="15" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Angle:</span><span id="fx-rgb-angle-val">0°</span></div>
+              <input type="range" id="fx-rgb-angle" min="0" max="360" value="0" oninput="moshUpdate()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="solar" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-solar-on" onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-solar-on" class="mosh-fx-title">☀️ Solarize / Posterize</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Solarize Threshold:</span><span id="fx-solar-thresh-val">50</span></div>
+              <input type="range" id="fx-solar-thresh" min="0" max="100" value="50" oninput="moshUpdate()">
+              <div class="mosh-slider-label"><span>Posterize Levels:</span><span id="fx-solar-levels-val">4</span></div>
+              <input type="range" id="fx-solar-levels" min="2" max="16" value="4" oninput="moshUpdate()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="barrel" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-barrel-on" onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-barrel-on" class="mosh-fx-title">🔍 Barrel Blur / Tilt Shift</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Blur Radius:</span><span id="fx-barrel-rad-val">10px</span></div>
+              <input type="range" id="fx-barrel-rad" min="1" max="30" value="10" oninput="moshUpdate()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" data-fx-id="edges" draggable="true">
+            <div class="mosh-fx-header">
+              <div style="display:flex; align-items:center;">
+                <input type="checkbox" class="win95-chk" id="fx-edges-on" onchange="moshUpdate()">
+                <span class="mosh-drag-handle">⋮⋮</span>
+                <label for="fx-edges-on" class="mosh-fx-title">✏️ Edges Highlight</label>
+              </div>
+            </div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Sensitivity:</span><span id="fx-edges-sens-val">40</span></div>
+              <input type="range" id="fx-edges-sens" min="0" max="100" value="40" oninput="moshUpdate()">
+            </div>
+          </div>
+        </div>
+
+        <div class="app-divider" id="mosh-sidebar-divider"></div>
+
+        <div class="app-viewport">
+          <canvas id="mosh-canvas" width="800" height="600"></canvas>
+          <video id="mosh-video-source" loop muted playsinline style="display:none;"></video>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <p class="status-bar-field" id="mosh-status-msg" style="flex:1;">Ready - Load media or click MOSH!</p>
+        <p class="status-bar-field" id="mosh-status-fx">Active FX: 4 / 14</p>
+        <p class="status-bar-field" id="mosh-status-res">800 x 600</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ PIXELSORT 95 WINDOW ══════════ -->
+  <div id="sort-window" class="window app-window" style="left: 120px; top: 40px; width: 1080px; height: 780px;">
+    <div class="resize-handle rh-n" data-dir="n"></div>
+    <div class="resize-handle rh-s" data-dir="s"></div>
+    <div class="resize-handle rh-e" data-dir="e"></div>
+    <div class="resize-handle rh-w" data-dir="w"></div>
+    <div class="resize-handle rh-ne" data-dir="ne"></div>
+    <div class="resize-handle rh-nw" data-dir="nw"></div>
+    <div class="resize-handle rh-se" data-dir="se"></div>
+    <div class="resize-handle rh-sw" data-dir="sw"></div>
+
+    <div class="title-bar" id="sort-title-bar">
+      <div class="title-bar-text">PixelSort 95</div>
+      <div class="title-bar-controls">
+        <button aria-label="Minimize" class="win-min-btn"></button>
+        <button aria-label="Maximize" class="win-max-btn"></button>
+        <button aria-label="Close" class="win-close-btn"></button>
+      </div>
+    </div>
+
+    <div class="window-body">
+      <div class="menubar" style="position: relative;">
+        <span onclick="document.getElementById('sort-file-input').click()"><u>F</u>ile</span>
+        <span onclick="performPixelSort()"><u>S</u>ort</span>
+        <span onclick="sortRandomize()"><u>R</u>andomize</span>
+        <span onclick="sortExportImage()"><u>E</u>xport</span>
+        <span><u>H</u>elp</span>
+      </div>
+
+      <div class="app-toolbar">
+        <button onclick="document.getElementById('sort-file-input').click()">📁 Load Media</button>
+        <button id="sort-webcam-btn" onclick="toggleSortWebcam()">📷 Webcam</button>
+        <button class="btn-accent-big" onclick="performPixelSort()">⚡ SORT PIXELS</button>
+        <button onclick="sortRandomize()">🎲 Randomize</button>
+        <button onclick="sortExportImage()">🖼️ Save PNG</button>
+        <button onclick="sortExportGIF()">🎞️ Save GIF</button>
+        <button id="sort-rec-btn" onclick="toggleSortVideoRecord()">🎥 Record Video</button>
+        <input type="file" id="sort-file-input" accept="image/*,video/*" style="display:none;" onchange="handleSortFileUpload(event)">
+      </div>
+
+      <div class="app-main-layout">
+        <div class="app-sidebar" id="sort-sidebar">
+          <div class="mosh-fx-card" style="background:#c0c0c0;">
+            <div style="font-weight:bold; color:#000080; margin-bottom:4px;">Media Source</div>
+            <select id="sort-sample-select" style="width:100%; font-size:11px;" onchange="loadSortSample(this.value)">
+              <option value="bars">📺 TV SMPTE Color Test Bars</option>
+              <option value="grid">🌆 Synthwave Grid & Sunset</option>
+              <option value="gradient">🌈 Cyber Color Gradient</option>
+              <option value="noise">⚡ Static Noise Pattern</option>
+            </select>
+          </div>
+
+          <div class="mosh-fx-card">
+            <div class="mosh-fx-header"><span style="color:#000080;">📊 Sorting Mode</span></div>
+            <select id="sort-mode-select" style="width:100%; font-size:11px;" onchange="updateSortUI()">
+              <option value="asdf_black">ASDF Black Mode (Classic)</option>
+              <option value="asdf_bright">ASDF Brightness Mode</option>
+              <option value="asdf_hue">ASDF Hue Mode</option>
+              <option value="asdf_sat">ASDF Saturation Mode</option>
+              <option value="asdf_rgb">ASDF RGB Channels Split Mode</option>
+              <option value="asdf_red">ASDF Red Channel Mode</option>
+            </select>
+            <div style="margin-top:6px; display:flex; align-items:center; gap:6px;">
+              <input type="checkbox" class="win95-chk" id="sort-reverse-chk" onchange="performPixelSort()">
+              <label for="sort-reverse-chk" style="cursor:pointer; font-weight:bold;">Reverse Sort Order</label>
+            </div>
+          </div>
+
+          <div class="mosh-fx-card">
+            <div class="mosh-fx-header"><span style="color:#000080;">🧭 Direction & Geometry</span></div>
+            <select id="sort-dir-select" style="width:100%; font-size:11px;" onchange="updateSortUI()">
+              <option value="circular">⭕ Circular / Concentric Ring Swirl</option>
+              <option value="h">Horizontal (0°)</option>
+              <option value="v">Vertical (90°)</option>
+              <option value="angle">Custom Angle</option>
+              <option value="radial">💥 Radial Outward Rays</option>
+            </select>
+            <div id="sort-angle-container" style="display:none;" class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Angle:</span><span id="sort-angle-val">45°</span></div>
+              <input type="range" id="sort-angle" min="0" max="360" value="45" oninput="updateSortUI()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card">
+            <div class="mosh-fx-header"><span style="color:#000080;">🎛️ Sensitivity & Thresholds</span></div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Lower Threshold:</span><span id="sort-min-val">40</span></div>
+              <input type="range" id="sort-min-thresh" min="0" max="255" value="40" oninput="updateSortUI()">
+              <div class="mosh-slider-label"><span>Upper Threshold:</span><span id="sort-max-val">220</span></div>
+              <input type="range" id="sort-max-thresh" min="0" max="255" value="220" oninput="updateSortUI()">
+              <div style="margin-top:4px; display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" class="win95-chk" id="sort-realtime-chk" checked>
+                <label for="sort-realtime-chk" style="cursor:pointer;">Real-time Live Render</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" id="sort-circular-panel" style="background:#dfdfdf;">
+            <div class="mosh-fx-header"><span style="color:#000080;">⭕ Circular Center & Ring Bounds</span></div>
+            <div style="font-size:10px; color:#444; margin-bottom:4px;">💡 Click on canvas to set center point!</div>
+            <div class="mosh-slider-group">
+              <div class="mosh-slider-label"><span>Center X:</span><span id="sort-cx-val">400px</span></div>
+              <input type="range" id="sort-cx-slider" min="0" max="800" value="400" oninput="updateSortUI()">
+              <div class="mosh-slider-label"><span>Center Y:</span><span id="sort-cy-val">300px</span></div>
+              <input type="range" id="sort-cy-slider" min="0" max="600" value="300" oninput="updateSortUI()">
+              <div class="mosh-slider-label"><span>Inner Ring Radius:</span><span id="sort-inner-r-val">40px</span></div>
+              <input type="range" id="sort-inner-r" min="0" max="300" value="40" oninput="updateSortUI()">
+              <div class="mosh-slider-label"><span>Outer Ring Radius:</span><span id="sort-outer-r-val">240px</span></div>
+              <input type="range" id="sort-outer-r" min="10" max="500" value="240" oninput="updateSortUI()">
+            </div>
+          </div>
+        </div>
+
+        <div class="app-divider" id="sort-sidebar-divider"></div>
+
+        <div class="app-viewport">
+          <canvas id="sort-canvas" width="800" height="600"></canvas>
+          <video id="sort-video-source" loop muted playsinline style="display:none;"></video>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <p class="status-bar-field" id="sort-status-msg" style="flex:1;">Ready - Click SORT PIXELS</p>
+        <p class="status-bar-field" id="sort-status-mode">Mode: ASDF Black (Circular)</p>
+        <p class="status-bar-field" id="sort-status-res">800 x 600</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ PIXELDEPTH 95 WINDOW ══════════ -->
+  <div id="depth-window" class="window app-window" style="left: 160px; top: 50px; width: 1100px; height: 800px;">
+    <div class="resize-handle rh-n" data-dir="n"></div>
+    <div class="resize-handle rh-s" data-dir="s"></div>
+    <div class="resize-handle rh-e" data-dir="e"></div>
+    <div class="resize-handle rh-w" data-dir="w"></div>
+    <div class="resize-handle rh-ne" data-dir="ne"></div>
+    <div class="resize-handle rh-nw" data-dir="nw"></div>
+    <div class="resize-handle rh-se" data-dir="se"></div>
+    <div class="resize-handle rh-sw" data-dir="sw"></div>
+
+    <div class="title-bar" id="depth-title-bar">
+      <div class="title-bar-text">PixelDepth 95 - 2.5D Parallax & Depth Map Studio</div>
+      <div class="title-bar-controls">
+        <button aria-label="Minimize" class="win-min-btn"></button>
+        <button aria-label="Maximize" class="win-max-btn"></button>
+        <button aria-label="Close" class="win-close-btn"></button>
+      </div>
+    </div>
+
+    <div class="window-body">
+      <div class="menubar" style="position: relative;">
+        <span onclick="document.getElementById('depth-file-input').click()"><u>F</u>ile</span>
+        <span onclick="performPixelDepth()"><u>R</u>ender Depth</span>
+        <span onclick="depthRandomize()"><u>R</u>andomize</span>
+        <span onclick="depthExportImage()"><u>E</u>xport</span>
+        <span><u>H</u>elp</span>
+      </div>
+
+      <div class="app-toolbar">
+        <button onclick="document.getElementById('depth-file-input').click()">📁 Load Image</button>
+        <button onclick="document.getElementById('depth-map-file-input').click()">🗺️ Load Custom Depth Map</button>
+        <button id="depth-webcam-btn" onclick="toggleDepthWebcam()">📷 Webcam</button>
+        <button class="btn-accent-big" onclick="performPixelDepth()">⚡ RENDER DEPTH</button>
+        <button onclick="depthRandomize()">🎲 Randomize</button>
+        <button onclick="depthExportImage()">🖼️ Save PNG</button>
+        <button onclick="depthExportGIF()">🎞️ Save Wiggle GIF</button>
+        <button id="depth-rec-btn" onclick="toggleDepthVideoRecord()">🎥 Record 3D Video</button>
+        <input type="file" id="depth-file-input" accept="image/*,video/*" style="display:none;" onchange="handleDepthFileUpload(event)">
+        <input type="file" id="depth-map-file-input" accept="image/*" style="display:none;" onchange="handleCustomDepthMapUpload(event)">
+      </div>
+
+      <div class="app-main-layout">
+        <div class="app-sidebar" id="depth-sidebar">
+          
+          <div class="mosh-fx-card" style="background:#c0c0c0;">
+            <div style="font-weight:bold; color:#000080; margin-bottom:4px;">Media Source</div>
+            <select id="depth-sample-select" style="width:100%; font-size:11px;" onchange="loadDepthSample(this.value)">
+              <option value="bars">📺 TV SMPTE Color Test Bars</option>
+              <option value="grid">🌆 Synthwave Sun & Grid</option>
+              <option value="mountain">🏔️ Geometric Mountain Peaks</option>
+              <option value="noise">⚡ Static Cyber Noise</option>
+            </select>
+          </div>
+
+          <div class="mosh-fx-card">
+            <div class="mosh-fx-header"><span style="color:#000080;">🗺️ Depth Map Extraction Mode</span></div>
+            <select id="depth-calc-mode" style="width:100%; font-size:11px;" onchange="updateDepthUI()">
+              <option value="lum">Luminance (Lightness = Front)</option>
+              <option value="inv_lum">Inverted Luminance (Darkness = Front)</option>
+              <option value="radial">Radial Center Dome</option>
+              <option value="vert">Vertical Depth Ramp</option>
+              <option value="sobel">Sobel Edge Relief Outline</option>
+              <option value="red">Red Channel Depth</option>
+              <option value="custom">Custom Uploaded Depth Map</option>
+            </select>
+
+            <div class="mosh-slider-group" style="margin-top:6px;">
+              <div class="mosh-slider-label"><span>Extrusion Distance:</span><span id="depth-ext-val">30px</span></div>
+              <input type="range" id="depth-ext-slider" min="0" max="80" value="30" oninput="updateDepthUI()">
+
+              <div class="mosh-slider-label"><span>Focus Plane Depth:</span><span id="depth-focus-val">128</span></div>
+              <input type="range" id="depth-focus-slider" min="0" max="255" value="128" oninput="updateDepthUI()">
+
+              <div class="mosh-slider-label"><span>Depth Map Blur / Smooth:</span><span id="depth-blur-val">2px</span></div>
+              <input type="range" id="depth-blur-slider" min="0" max="15" value="2" oninput="updateDepthUI()">
+
+              <div style="margin-top:4px; display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" class="win95-chk" id="depth-invert-chk" onchange="updateDepthUI()">
+                <label for="depth-invert-chk" style="cursor:pointer; font-weight:bold;">Invert Depth Values</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mosh-fx-card">
+            <div class="mosh-fx-header"><span style="color:#000080;">👁️ View Mode</span></div>
+            <select id="depth-view-mode" style="width:100%; font-size:11px;" onchange="updateDepthUI()">
+              <option value="parallax">⭕ 2.5D Parallax Interactive (Move Mouse!)</option>
+              <option value="depth_map">🗺️ Depth Map Preview (Grayscale)</option>
+              <option value="split">📑 Split Screen (Image vs Depth)</option>
+              <option value="anaglyph">👓 Stereo Anaglyph 3D (Red / Cyan)</option>
+              <option value="wireframe">📐 3D Perspective Heightmap Wireframe</option>
+            </select>
+          </div>
+
+          <div class="mosh-fx-card" style="background:#dfdfdf;">
+            <div class="mosh-fx-header"><span style="color:#000080;">🌀 Auto 2.5D Wiggle Motion</span></div>
+            <div class="mosh-slider-group">
+              <label>Wiggle Pattern:</label>
+              <select id="depth-wiggle-mode" style="width:100%; font-size:11px;" onchange="updateDepthUI()">
+                <option value="mouse">Interactive Mouse Motion</option>
+                <option value="h_wiggle">Horizontal 2.5D Wobble</option>
+                <option value="v_wiggle">Vertical 2.5D Wobble</option>
+                <option value="orbit">Circular 3D Orbit</option>
+                <option value="figure8">Figure-8 Infinity Motion</option>
+              </select>
+
+              <div class="mosh-slider-label"><span>Wiggle Speed:</span><span id="depth-wiggle-speed-val">40</span></div>
+              <input type="range" id="depth-wiggle-speed" min="5" max="100" value="40" oninput="updateDepthUI()">
+
+              <div class="mosh-slider-label"><span>Wiggle Amplitude:</span><span id="depth-wiggle-amp-val">20px</span></div>
+              <input type="range" id="depth-wiggle-amp" min="2" max="60" value="20" oninput="updateDepthUI()">
+            </div>
+          </div>
+
+        </div>
+
+        <div class="app-divider" id="depth-sidebar-divider"></div>
+
+        <div class="app-viewport" id="depth-viewport-container">
+          <canvas id="depth-canvas" width="800" height="600"></canvas>
+          <video id="depth-video-source" loop muted playsinline style="display:none;"></video>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <p class="status-bar-field" id="depth-status-msg" style="flex:1;">Ready - Move mouse over viewport for 2.5D parallax!</p>
+        <p class="status-bar-field" id="depth-status-mode">Mode: 2.5D Parallax</p>
+        <p class="status-bar-field" id="depth-status-res">800 x 600</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Start Menu -->
+<div id="start-menu">
+  <div class="start-menu-sidebar"><span><b>Windows</b> 95</span></div>
+  <div class="start-menu-list">
+    <div class="start-menu-item" onclick="openApp('paint-window')"><b>🎨</b> Glitch Paint</div>
+    <div class="start-menu-item" onclick="openApp('mosh-window')"><b>📹</b> PixelMosh 95</div>
+    <div class="start-menu-item" onclick="openApp('sort-window')"><b>📶</b> PixelSort 95</div>
+    <div class="start-menu-item" onclick="openApp('depth-window')"><b>🧊</b> PixelDepth 95</div>
+    <div class="start-menu-divider"></div>
+    <div class="start-menu-item"><b>📂</b> Documents</div>
+    <div class="start-menu-item"><b>⚙️</b> Settings</div>
+    <div class="start-menu-item"><b>🔍</b> Find</div>
+    <div class="start-menu-item"><b>❓</b> Help</div>
+    <div class="start-menu-item"><b>🏃</b> Run...</div>
+    <div class="start-menu-divider"></div>
+    <div class="start-menu-item"><b>🔒</b> Shut Down...</div>
+  </div>
+</div>
+
+<!-- Taskbar -->
+<div id="taskbar">
+  <button id="start-btn"><b>⊞</b> Start</button>
+  <div id="taskbar-items" style="display:flex; gap:4px; flex:1;"></div>
+  <div id="taskbar-clock"></div>
+</div>
+
+<!-- Canvas Size Dialog for Paint -->
+<div class="dialog-overlay" id="canvas-size-dialog">
+  <div class="window" style="min-width: 250px;">
+    <div class="title-bar"><div class="title-bar-text">Canvas Size</div></div>
+    <div class="window-body" style="padding: 12px;">
+      <div style="margin-bottom: 12px;">Enter new dimensions (pixels):</div>
+      <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+        <label style="font-size: 11px; width: 40px;">Width:</label>
+        <input type="number" id="canvas-w-input" value="1024" style="width: 80px;">
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px;">
+        <label style="font-size: 11px; width: 40px;">Height:</label>
+        <input type="number" id="canvas-h-input" value="1024" style="width: 80px;">
+      </div>
+      <div style="display: flex; gap: 6px; justify-content: flex-end;">
+        <button id="canvas-size-ok">OK</button>
+        <button id="canvas-size-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PixelMosh GIF Progress Overlay -->
+<div id="mosh-gif-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:25000; justify-content:center; align-items:center;">
+  <div class="window" style="margin:0; min-width:320px;">
+    <div class="title-bar"><div class="title-bar-text">PixelMosh - Saving GIF...</div></div>
+    <div class="window-body" style="padding:16px;">
+      <p id="mosh-gif-status-text" style="margin:0 0 8px 0; font-size:11px;">Capturing frame loop...</p>
+      <div style="width:100%; height:20px; box-shadow:inset -1px -1px #fff, inset 1px 1px #0a0a0a; background:#c0c0c0; padding:2px;">
+        <div id="mosh-gif-progress-bar" style="width:0%; height:100%; background:#000080;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PixelSort GIF Progress Overlay -->
+<div id="sort-gif-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:25000; justify-content:center; align-items:center;">
+  <div class="window" style="margin:0; min-width:320px;">
+    <div class="title-bar"><div class="title-bar-text">PixelSort - Saving GIF...</div></div>
+    <div class="window-body" style="padding:16px;">
+      <p id="sort-gif-status-text" style="margin:0 0 8px 0; font-size:11px;">Capturing pixel sort sequence...</p>
+      <div style="width:100%; height:20px; box-shadow:inset -1px -1px #fff, inset 1px 1px #0a0a0a; background:#c0c0c0; padding:2px;">
+        <div id="sort-gif-progress-bar" style="width:0%; height:100%; background:#000080;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PixelDepth GIF Progress Overlay -->
+<div id="depth-gif-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:25000; justify-content:center; align-items:center;">
+  <div class="window" style="margin:0; min-width:320px;">
+    <div class="title-bar"><div class="title-bar-text">PixelDepth - Saving 2.5D Wiggle GIF...</div></div>
+    <div class="window-body" style="padding:16px;">
+      <p id="depth-gif-status-text" style="margin:0 0 8px 0; font-size:11px;">Capturing 2.5D parallax loop...</p>
+      <div style="width:100%; height:20px; box-shadow:inset -1px -1px #fff, inset 1px 1px #0a0a0a; background:#c0c0c0; padding:2px;">
+        <div id="depth-gif-progress-bar" style="width:0%; height:100%; background:#000080;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ══════════ WINDOW MANAGEMENT ENGINE ══════════
+  const startBtn = document.getElementById('start-btn');
+  const startMenu = document.getElementById('start-menu');
+  const taskbarItems = document.getElementById('taskbar-items');
+  const clock = document.getElementById('taskbar-clock');
+
+  let maxZ = 100;
+  let topWinId = null;
+
+  function updateClock() {
+    const now = new Date();
+    clock.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  startBtn.onclick = (e) => {
+    e.stopPropagation();
+    startMenu.style.display = startMenu.style.display === 'flex' ? 'none' : 'flex';
+  };
+  document.addEventListener('click', () => startMenu.style.display = 'none');
+  startMenu.onclick = (e) => e.stopPropagation();
+
+  document.getElementById('desktop').onclick = () => {
+    document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
+  };
+
+  const appWindows = [
+    { id: 'paint-window', title: '🎨 Glitch Paint', icon: 'desktop-shortcut-paint' },
+    { id: 'mosh-window', title: '📹 PixelMosh 95', icon: 'desktop-shortcut-mosh' },
+    { id: 'sort-window', title: '📶 PixelSort 95', icon: 'desktop-shortcut-sort' },
+    { id: 'depth-window', title: '🧊 PixelDepth 95', icon: 'desktop-shortcut-depth' }
+  ];
+
+  function openApp(winId) {
+    const win = document.getElementById(winId);
+    if (!win) return;
+    win.style.display = 'flex';
+    win.dataset.open = 'true';
+    win.style.zIndex = ++maxZ;
+    updateTaskbar();
+
+    if (winId === 'mosh-window' && !moshInitialized) {
+      initPixelMoshEngine();
+    } else if (winId === 'sort-window' && !sortInitialized) {
+      initPixelSortEngine();
+    } else if (winId === 'depth-window' && !depthInitialized) {
+      initPixelDepthEngine();
+    }
+  }
+
+  function closeApp(winId) {
+    const win = document.getElementById(winId);
+    if (!win) return;
+    win.style.display = 'none';
+    win.dataset.open = 'false';
+    updateTaskbar();
+  }
+
+  function updateTaskbar() {
+    taskbarItems.innerHTML = '';
+    let topZ = -1;
+    topWinId = null;
+
+    appWindows.forEach(app => {
+      const el = document.getElementById(app.id);
+      if (el && el.dataset.open === 'true' && el.style.display !== 'none') {
+        const z = parseInt(el.style.zIndex || '0');
+        if (z > topZ) {
+          topZ = z;
+          topWinId = app.id;
+        }
       }
-
-      btn.onclick = () => {
-        paintsBar.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentPaint = paintId;
-      };
-      paintsBar.appendChild(btn);
     });
 
-    const msColors = [
-      '#6e2727', '#962626', '#cd2424', '#e25d26', '#e68127', '#f4aa41',
-      '#f8cd7c', '#dbae65', '#c89050', '#ab6f3b', '#82502e', '#5b3728',
-      '#33211c', '#261918', '#000000', '#121017', '#21212c', '#333443',
-      '#4c505b', '#777e86', '#9da1a4', '#cbcbcb', '#e2e2e2', '#ffffff',
-      '#f9ffb7', '#fdff90', '#f3f647', '#9bd24d', '#59b341', '#35823a',
-      '#2a5641', '#466573', '#40898e', '#34c5a3', '#41ee95', '#8fc8d6',
-      '#4f99ba', '#3577a3', '#265a86', '#1d355e', '#1b254e', '#331a3b',
-      '#662a71', '#c756be', '#e284d0', '#eebed1', '#000000', '#ffffff'
-    ];
+    appWindows.forEach(app => {
+      const win = document.getElementById(app.id);
+      if (win && win.dataset.open === 'true') {
+        const btn = document.createElement('button');
+        const isActive = (app.id === topWinId && win.style.display !== 'none');
+        btn.className = 'taskbar-item' + (isActive ? ' active' : '');
+        btn.innerHTML = app.title;
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          if (win.style.display === 'none') {
+            win.style.display = 'flex';
+            win.style.zIndex = ++maxZ;
+          } else if (isActive) {
+            win.style.display = 'none';
+          } else {
+            win.style.zIndex = ++maxZ;
+          }
+          updateTaskbar();
+        };
+        taskbarItems.appendChild(btn);
+      }
+    });
+  }
 
-    const paletteGrid = document.querySelector('.palette-grid');
-    msColors.forEach(color => {
-      const square = document.createElement('div');
-      square.className = 'palette-color';
-      square.style.background = color;
-      square.onpointerdown = (e) => {
-        if (e.button === 2) {
-          bgColor = color;
-          document.getElementById('bg-swatch').style.background = bgColor;
+  appWindows.forEach(app => {
+    const shortcut = document.getElementById(app.icon);
+    if (!shortcut) return;
+    shortcut.onclick = (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
+      shortcut.classList.add('selected');
+    };
+    shortcut.ondblclick = (e) => {
+      e.stopPropagation();
+      openApp(app.id);
+    };
+  });
+
+  appWindows.forEach(app => {
+    const win = document.getElementById(app.id);
+    if (!win) return;
+    const titleBar = win.querySelector('.title-bar');
+
+    win.onpointerdown = () => {
+      win.style.zIndex = ++maxZ;
+      updateTaskbar();
+    };
+
+    let isDragging = false, dragX = 0, dragY = 0;
+    titleBar.onpointerdown = (e) => {
+      if (e.target.closest('.title-bar-controls')) return;
+      if (win.dataset.maximized === 'true') return;
+      isDragging = true;
+      win.style.zIndex = ++maxZ;
+      updateTaskbar();
+      dragX = e.clientX - win.offsetLeft;
+      dragY = e.clientY - win.offsetTop;
+      titleBar.setPointerCapture(e.pointerId);
+    };
+    titleBar.onpointermove = (e) => {
+      if (!isDragging) return;
+      win.style.left = (e.clientX - dragX) + 'px';
+      win.style.top = (e.clientY - dragY) + 'px';
+    };
+    titleBar.onpointerup = (e) => {
+      isDragging = false;
+      try { titleBar.releasePointerCapture(e.pointerId); } catch(err){}
+    };
+
+    const minBtn = titleBar.querySelector('.win-min-btn');
+    const maxBtn = titleBar.querySelector('.win-max-btn');
+    const closeBtn = titleBar.querySelector('.win-close-btn');
+
+    if (minBtn) {
+      minBtn.onclick = (e) => {
+        e.stopPropagation();
+        win.style.display = 'none';
+        updateTaskbar();
+      };
+    }
+    if (maxBtn) {
+      maxBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (win.dataset.maximized !== 'true') {
+          win.dataset.oldLeft = win.style.left;
+          win.dataset.oldTop = win.style.top;
+          win.dataset.oldWidth = win.style.width;
+          win.dataset.oldHeight = win.style.height;
+          win.style.left = '0';
+          win.style.top = '0';
+          win.style.width = '100%';
+          win.style.height = 'calc(100% - 28px)';
+          win.dataset.maximized = 'true';
         } else {
-          fgColor = color;
-          document.getElementById('fg-swatch').style.background = fgColor;
+          win.style.left = win.dataset.oldLeft || '40px';
+          win.style.top = win.dataset.oldTop || '20px';
+          win.style.width = win.dataset.oldWidth || '900px';
+          win.style.height = win.dataset.oldHeight || '650px';
+          win.dataset.maximized = 'false';
         }
       };
-      // prevent context menu on right click for color grid
-      square.oncontextmenu = (e) => e.preventDefault();
-      paletteGrid.appendChild(square);
-    });
-
-    // Utility
-    function invertColor(hex) {
-      if (!hex) return '#ffffff';
-      if (hex.startsWith('rgba')) return '#ffffff'; // simplification
-      let num = parseInt(hex.slice(1), 16);
-      if (isNaN(num)) return '#ffffff';
-      let inv = 0xFFFFFF ^ num;
-      return '#' + inv.toString(16).padStart(6, '0');
+    }
+    if (closeBtn) {
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        closeApp(app.id);
+      };
     }
 
-    // Canvas Logic
-    const staticCanvas = document.getElementById('staticCanvas');
-    const staticCtx = staticCanvas.getContext('2d', { alpha: false });
+    let isResizing = false, resizeDir = '';
+    win.querySelectorAll('.resize-handle').forEach(rh => {
+      rh.onpointerdown = (e) => {
+        e.stopPropagation();
+        isResizing = true;
+        resizeDir = rh.dataset.dir;
+        rh.setPointerCapture(e.pointerId);
+      };
+      rh.onpointermove = (e) => {
+        if (!isResizing) return;
+        const rect = win.getBoundingClientRect();
+        if (resizeDir.includes('e')) win.style.width = Math.max(340, e.clientX - rect.left) + 'px';
+        if (resizeDir.includes('s')) win.style.height = Math.max(260, e.clientY - rect.top) + 'px';
+        if (resizeDir.includes('w')) {
+          const newW = rect.right - e.clientX;
+          if (newW > 340) {
+            win.style.width = newW + 'px';
+            win.style.left = e.clientX + 'px';
+          }
+        }
+        if (resizeDir.includes('n')) {
+          const newH = rect.bottom - e.clientY;
+          if (newH > 260) {
+            win.style.height = newH + 'px';
+            win.style.top = e.clientY + 'px';
+          }
+        }
+      };
+      rh.onpointerup = (e) => {
+        isResizing = false;
+        try { rh.releasePointerCapture(e.pointerId); } catch(err){}
+      };
+    });
+  });
+
+  openApp('paint-window');
+
+  // ══════════ GLITCH PAINT LOGIC ══════════
+  const drawingTools = [
+    { id: 'select', icon: '⬚' },
+    { id: 'fill', icon: '🪣' },
+    { id: 'pen', icon: '✏️' },
+    { id: 'rect', icon: '⬜' }
+  ];
+
+  const paintPatterns = [
+    'solid', 'eraser', 'noise', 'static-glitch', 'h-scan', 'v-scan',
+    'strobe', 'checkers', 'sine', 'matrix', 'rgb-split', 'vhs',
+    'dither', 'barcode', 'tv-roll', 'pulse', 'sparkle', 'rgb-shift',
+    'scan-glitch', 'blocks', 'zigzag', 'hypnotic',
+    'crt-warp', 'pixel-burn', 'wipe', 'static-lines', 'bit-shift',
+    'error-box', 'tape-delay', 'corrupt', 'wireframe', 'float',
+    'fx-hue', 'fx-glow', 'fx-solar', 'fx-sort', 'fx-sharp', 'fx-dither', 'fx-smudge'
+  ];
+
+  let currentTool = 'pen';
+  let currentPaint = 'solid';
+  let fgColor = '#000000';
+  let bgColor = '#ffffff';
+
+  const toolsBar = document.querySelector('.tools-bar');
+  drawingTools.forEach((tool) => {
+    const btn = document.createElement('button');
+    btn.className = 'tool-btn' + (tool.id === 'pen' ? ' active' : '');
+    btn.dataset.tool = tool.id;
+    btn.title = tool.id.toUpperCase();
+    btn.innerHTML = `<span style="font-size: 14px;">${tool.icon}</span>`;
+    btn.onclick = () => {
+      toolsBar.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTool = tool.id;
+    };
+    toolsBar.appendChild(btn);
+  });
+
+  const paintsBar = document.querySelector('.paints-bar');
+  paintPatterns.forEach((paintId) => {
+    const btn = document.createElement('button');
+    btn.className = 'tool-btn' + (paintId === 'solid' ? ' active' : '');
+    btn.dataset.paint = paintId;
+    btn.title = 'PAINT: ' + paintId.toUpperCase();
+
+    if (paintId.startsWith('fx-')) {
+      let fxIcon = '✨';
+      if (paintId === 'fx-hue') fxIcon = '🌈';
+      if (paintId === 'fx-solar') fxIcon = '☀️';
+      if (paintId === 'fx-sort') fxIcon = '📶';
+      if (paintId === 'fx-sharp') fxIcon = '📐';
+      if (paintId === 'fx-dither') fxIcon = '🏁';
+      if (paintId === 'fx-smudge') fxIcon = '🌀';
+      btn.innerHTML = `<span style="font-size: 14px; top: 2px; position:relative;">${fxIcon}</span>`;
+    } else {
+      btn.innerHTML = `<canvas id="icon-${paintId}" width="16" height="16"></canvas>`;
+    }
+
+    btn.onclick = () => {
+      paintsBar.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentPaint = paintId;
+    };
+    paintsBar.appendChild(btn);
+  });
+
+  const msColors = [
+    '#6e2727', '#962626', '#cd2424', '#e25d26', '#e68127', '#f4aa41',
+    '#f8cd7c', '#dbae65', '#c89050', '#ab6f3b', '#82502e', '#5b3728',
+    '#33211c', '#261918', '#000000', '#121017', '#21212c', '#333443',
+    '#4c505b', '#777e86', '#9da1a4', '#cbcbcb', '#e2e2e2', '#ffffff',
+    '#f9ffb7', '#fdff90', '#f3f647', '#9bd24d', '#59b341', '#35823a',
+    '#2a5641', '#466573', '#40898e', '#34c5a3', '#41ee95', '#8fc8d6',
+    '#4f99ba', '#3577a3', '#265a86', '#1d355e', '#1b254e', '#331a3b',
+    '#662a71', '#c756be', '#e284d0', '#eebed1', '#000000', '#ffffff'
+  ];
+
+  const paletteGrid = document.querySelector('.palette-grid');
+  msColors.forEach(color => {
+    const square = document.createElement('div');
+    square.className = 'palette-color';
+    square.style.background = color;
+    square.onpointerdown = (e) => {
+      if (e.button === 2) {
+        bgColor = color;
+        document.getElementById('bg-swatch').style.background = bgColor;
+      } else {
+        fgColor = color;
+        document.getElementById('fg-swatch').style.background = fgColor;
+      }
+    };
+    square.oncontextmenu = (e) => e.preventDefault();
+    paletteGrid.appendChild(square);
+  });
+
+  let canvasW = 1024, canvasH = 1024;
+  const staticCanvas = document.getElementById('staticCanvas');
+  const staticCtx = staticCanvas.getContext('2d', { alpha: false });
+  const paintCanvas = document.getElementById('paintCanvas');
+  const ctx = paintCanvas.getContext('2d');
+  const canvasWrapper = document.getElementById('canvas-wrapper');
+
+  let rows, cols;
+  let grid;
+  let history = [], historyStep = -1;
+  const maxHistory = 30;
+
+  function initCanvas(w, h) {
+    canvasW = w; canvasH = h;
+    staticCanvas.width = w; staticCanvas.height = h;
+    paintCanvas.width = w; paintCanvas.height = h;
+    canvasWrapper.style.width = w + 'px';
+    canvasWrapper.style.height = h + 'px';
+
+    cols = Math.ceil(w / 12);
+    rows = Math.ceil(h / 12);
+    grid = new Array(rows).fill(null).map(() => new Array(cols).fill(null));
+
     staticCtx.fillStyle = '#ffffff';
-    staticCtx.fillRect(0, 0, 1024, 1024);
-
-    const paintCanvas = document.getElementById('paintCanvas');
-    const ctx = paintCanvas.getContext('2d');
-
-    const rows = 86, cols = 86; // Roughly 1024 / 12
-    let grid = new Array(rows).fill(null).map(() => new Array(cols).fill(null));
-
-    // History System
-    let history = [];
-    let historyStep = -1;
-    const maxHistory = 30;
-
-    function cloneGrid() {
-      return grid.map(row => row.map(cell => cell ? { ...cell } : null));
-    }
-
-    function saveState() {
-      // Clear redo history if we make a new action
-      if (historyStep < history.length - 1) {
-        history = history.slice(0, historyStep + 1);
-      }
-      history.push({
-        imgData: staticCtx.getImageData(0, 0, 1024, 1024),
-        gridData: cloneGrid()
-      });
-      if (history.length > maxHistory) {
-        history.shift();
-      } else {
-        historyStep++;
-      }
-    }
-
-    function undo() {
-      if (historyStep > 0) {
-        historyStep--;
-        restoreState();
-      }
-    }
-
-    function redo() {
-      if (historyStep < history.length - 1) {
-        historyStep++;
-        restoreState();
-      }
-    }
-
-    function restoreState() {
-      let state = history[historyStep];
-      staticCtx.putImageData(state.imgData, 0, 0);
-      grid = state.gridData.map(row => row.map(cell => cell ? { ...cell } : null));
-    }
-
-    // Initialization
+    staticCtx.fillRect(0, 0, w, h);
+    document.getElementById('coords-status').innerText = `${w} x ${h}`;
+    history = []; historyStep = -1;
     saveState();
+  }
 
-    let isDrawing = false;
-    let lastGrid = null;
-    let brushSize = 1;
+  initCanvas(800, 800);
 
-    let startX = -1, startY = -1;
-    let currX = -1, currY = -1;
-    let selection = null;
+  function cloneGrid() {
+    return grid.map(row => row.map(cell => cell ? { ...cell } : null));
+  }
 
-    const sizeOptions = document.querySelector('.size-options');
-    [1, 2, 3, 4].forEach((s) => {
-      const btn = document.createElement('button');
-      btn.className = 'tool-btn' + (s === 1 ? ' active' : '');
-      btn.style.width = '100%';
-      btn.style.height = '16px';
-      btn.dataset.size = s;
-      btn.innerHTML = `<div style="width: ${s * 3}px; height: ${s * 3}px; background: #000;"></div>`;
-      btn.onclick = () => {
-        document.querySelectorAll('.size-options .tool-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        brushSize = s;
-      };
-      sizeOptions.appendChild(btn);
+  function saveState() {
+    if (historyStep < history.length - 1) {
+      history = history.slice(0, historyStep + 1);
+    }
+    history.push({
+      imgData: staticCtx.getImageData(0, 0, canvasW, canvasH),
+      gridData: cloneGrid()
     });
+    if (history.length > maxHistory) history.shift();
+    else historyStep++;
+  }
 
-    function getGridPos(e) {
-      const rect = paintCanvas.getBoundingClientRect();
-      const x = Math.floor(e.clientX - rect.left);
-      const y = Math.floor(e.clientY - rect.top);
-      return { x: Math.floor(x / 12), y: Math.floor(y / 12), px: x, py: y };
+  function undo() {
+    if (historyStep > 0) { historyStep--; restoreState(); }
+  }
+
+  function redo() {
+    if (historyStep < history.length - 1) { historyStep++; restoreState(); }
+  }
+
+  function restoreState() {
+    let state = history[historyStep];
+    staticCtx.putImageData(state.imgData, 0, 0);
+    grid = state.gridData.map(row => row.map(cell => cell ? { ...cell } : null));
+  }
+
+  let isDrawing = false, lastGrid = null, brushSize = 1;
+  let startX = -1, startY = -1, currX = -1, currY = -1, selection = null;
+
+  const sizeOptions = document.querySelector('.size-options');
+  [1, 2, 3, 4].forEach((s) => {
+    const btn = document.createElement('button');
+    btn.className = 'tool-btn' + (s === 1 ? ' active' : '');
+    btn.style.width = '100%'; btn.style.height = '16px';
+    btn.dataset.size = s;
+    btn.innerHTML = `<div style="width: ${s * 3}px; height: ${s * 3}px; background: #000;"></div>`;
+    btn.onclick = () => {
+      document.querySelectorAll('.size-options .tool-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      brushSize = s;
+    };
+    sizeOptions.appendChild(btn);
+  });
+
+  function getGridPos(e) {
+    const rect = paintCanvas.getBoundingClientRect();
+    const x = Math.floor(e.clientX - rect.left);
+    const y = Math.floor(e.clientY - rect.top);
+    return { x: Math.floor(x / 12), y: Math.floor(y / 12), px: x, py: y };
+  }
+
+  function commitCell(nx, ny, color, isEraser) {
+    if (nx >= cols || ny >= rows || nx < 0 || ny < 0) return;
+    if (selection) {
+      if (nx < selection.x || nx >= selection.x + selection.w ||
+        ny < selection.y || ny >= selection.y + selection.h) return;
     }
 
-    function commitCell(nx, ny, color, isEraser) {
-      if (nx >= cols || ny >= rows || nx < 0 || ny < 0) return;
-
-      // Selection Mask Clipping
-      if (selection) {
-        if (nx < selection.x || nx >= selection.x + selection.w ||
-          ny < selection.y || ny >= selection.y + selection.h) {
-          return;
-        }
-      }
-
-      grid[ny][nx] = null;
-      if (isEraser) {
-        staticCtx.fillStyle = color;
-        staticCtx.fillRect(nx * 12, ny * 12, 12, 12);
-      } else if (!currentPaint.startsWith('fx-') && currentPaint !== 'solid') {
-        grid[ny][nx] = {
-          type: currentPaint,
-          color: color,
-          offset: Math.random()
-        };
-      } else if (currentPaint.startsWith('fx-')) {
-        grid[ny][nx] = {
-          type: currentPaint,
-          color: color, // Color might not be directly used by FX, but good to keep consistent
-          offset: Math.random()
-        };
-      } else { // currentPaint === 'solid'
-        staticCtx.fillStyle = color;
-        staticCtx.fillRect(nx * 12, ny * 12, 12, 12);
-      }
+    grid[ny][nx] = null;
+    if (isEraser) {
+      staticCtx.fillStyle = color; staticCtx.fillRect(nx * 12, ny * 12, 12, 12);
+    } else if (!currentPaint.startsWith('fx-') && currentPaint !== 'solid') {
+      grid[ny][nx] = { type: currentPaint, color: color, offset: Math.random() };
+    } else if (currentPaint.startsWith('fx-')) {
+      grid[ny][nx] = { type: currentPaint, color: color, offset: Math.random() };
+    } else {
+      staticCtx.fillStyle = color; staticCtx.fillRect(nx * 12, ny * 12, 12, 12);
     }
+  }
 
-    function matchCell(cx, cy, targetType, targetColor) {
-      const cell = grid[cy][cx];
-      if (targetType === null) {
-        return cell === null;
-      } else {
-        return cell && cell.type === targetType && cell.color === targetColor;
-      }
-    }
+  function matchCell(cx, cy, targetType, targetColor) {
+    const cell = grid[cy][cx];
+    if (targetType === null) return cell === null;
+    return cell && cell.type === targetType && cell.color === targetColor;
+  }
 
-    function applyFillTool(pos, activeColor, isEraser) {
-      if (selection && (pos.x < selection.x || pos.x >= selection.x + selection.w || pos.y < selection.y || pos.y >= selection.y + selection.h)) return;
+  function applyFillTool(pos, activeColor, isEraser) {
+    if (selection && (pos.x < selection.x || pos.x >= selection.x + selection.w || pos.y < selection.y || pos.y >= selection.y + selection.h)) return;
 
-      const targetCell = grid[pos.y][pos.x];
-      const targetType = targetCell ? targetCell.type : null;
-      const targetColor = targetCell ? targetCell.color : null;
+    const targetCell = grid[pos.y][pos.x];
+    const targetType = targetCell ? targetCell.type : null;
+    const targetColor = targetCell ? targetCell.color : null;
 
-      if (targetType === currentPaint && targetColor === activeColor) return;
-      if (targetType === null && isEraser) return;
+    if (targetType === currentPaint && targetColor === activeColor) return;
+    if (targetType === null && isEraser) return;
 
-      const queue = [{ x: pos.x, y: pos.y }];
-      const visited = new Array(rows).fill(false).map(() => new Array(cols).fill(false));
-      visited[pos.y][pos.x] = true;
+    const queue = [{ x: pos.x, y: pos.y }];
+    const visited = new Array(rows).fill(false).map(() => new Array(cols).fill(false));
+    visited[pos.y][pos.x] = true;
 
-      while (queue.length > 0) {
-        const curr = queue.shift();
-        commitCell(curr.x, curr.y, activeColor, isEraser);
+    while (queue.length > 0) {
+      const curr = queue.shift();
+      commitCell(curr.x, curr.y, activeColor, isEraser);
 
-        const neighbors = [
-          { x: curr.x + 1, y: curr.y }, { x: curr.x - 1, y: curr.y },
-          { x: curr.x, y: curr.y + 1 }, { x: curr.x, y: curr.y - 1 }
-        ];
+      const neighbors = [
+        { x: curr.x + 1, y: curr.y }, { x: curr.x - 1, y: curr.y },
+        { x: curr.x, y: curr.y + 1 }, { x: curr.x, y: curr.y - 1 }
+      ];
 
-        for (let n of neighbors) {
-          if (n.x >= 0 && n.x < cols && n.y >= 0 && n.y < rows) {
-            if (selection && (n.x < selection.x || n.x >= selection.x + selection.w || n.y < selection.y || n.y >= selection.y + selection.h)) continue;
-
-            if (!visited[n.y][n.x] && matchCell(n.x, n.y, targetType, targetColor)) {
-              visited[n.y][n.x] = true;
-              queue.push(n);
-            }
+      for (let n of neighbors) {
+        if (n.x >= 0 && n.x < cols && n.y >= 0 && n.y < rows) {
+          if (selection && (n.x < selection.x || n.x >= selection.x + selection.w || n.y < selection.y || n.y >= selection.y + selection.h)) continue;
+          if (!visited[n.y][n.x] && matchCell(n.x, n.y, targetType, targetColor)) {
+            visited[n.y][n.x] = true;
+            queue.push(n);
           }
         }
       }
     }
+  }
 
-    function applyPenTool(pos, activeColor, isEraser) {
-      if (lastGrid && lastGrid.x === pos.x && lastGrid.y === pos.y) return;
-      lastGrid = pos;
+  function applyPenTool(pos, activeColor, isEraser) {
+    if (lastGrid && lastGrid.x === pos.x && lastGrid.y === pos.y) return;
+    lastGrid = pos;
+    for (let dy = 0; dy < brushSize; dy++) {
+      for (let dx = 0; dx < brushSize; dx++) {
+        commitCell(pos.x + dx, pos.y + dy, activeColor, isEraser);
+      }
+    }
+  }
+
+  function getActiveColor(e) {
+    const isRightClick = e.button === 2 || (e.buttons & 2);
+    return currentPaint === 'eraser' ? bgColor : (isRightClick ? bgColor : fgColor);
+  }
+
+  paintCanvas.addEventListener('pointerdown', e => {
+    isDrawing = true; lastGrid = null;
+    paintCanvas.setPointerCapture(e.pointerId);
+
+    const pos = getGridPos(e);
+    const activeColor = getActiveColor(e);
+    const isEraser = currentPaint === 'eraser';
+
+    if (pos.x < 0 || pos.x >= cols || pos.y < 0 || pos.y >= rows) return;
+
+    if (currentTool === 'pen') {
       for (let dy = 0; dy < brushSize; dy++) {
         for (let dx = 0; dx < brushSize; dx++) {
           commitCell(pos.x + dx, pos.y + dy, activeColor, isEraser);
         }
       }
+    } else if (currentTool === 'fill') {
+      applyFillTool(pos, activeColor, isEraser);
+    } else if (currentTool === 'rect' || currentTool === 'select') {
+      startX = pos.x; startY = pos.y; currX = pos.x; currY = pos.y;
+      if (currentTool === 'select') selection = null;
     }
+  });
 
-    function getActiveColor(e) {
-      const isRightClick = e.button === 2 || (e.buttons & 2);
-      return currentPaint === 'eraser' ? bgColor : (isRightClick ? bgColor : fgColor);
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'z') undo();
+    if (e.ctrlKey && e.key === 'y') redo();
+  });
+
+  function closeAllMenus() {
+    if (typeof editDropdown !== 'undefined') editDropdown.style.display = 'none';
+    if (typeof fileDropdown !== 'undefined') fileDropdown.style.display = 'none';
+    if (typeof imageDropdown !== 'undefined') imageDropdown.style.display = 'none';
+  }
+
+  const fileMenu = document.querySelector('.menu-file');
+  const fileDropdown = document.getElementById('file-dropdown');
+  fileMenu.addEventListener('pointerdown', (e) => { e.stopPropagation(); closeAllMenus(); fileDropdown.style.display = 'flex'; });
+
+  const editMenu = document.querySelector('.menu-edit');
+  const editDropdown = document.getElementById('edit-dropdown');
+  editMenu.addEventListener('pointerdown', (e) => { e.stopPropagation(); closeAllMenus(); editDropdown.style.display = 'flex'; });
+
+  document.getElementById('menu-undo').addEventListener('pointerdown', undo);
+  document.getElementById('menu-redo').addEventListener('pointerdown', redo);
+
+  const imageMenu = document.querySelector('.menu-image');
+  const imageDropdown = document.getElementById('image-dropdown');
+  imageMenu.addEventListener('pointerdown', (e) => { e.stopPropagation(); closeAllMenus(); imageDropdown.style.display = 'flex'; });
+
+  document.addEventListener('pointerdown', () => closeAllMenus());
+
+  const sizeDialog = document.getElementById('canvas-size-dialog');
+  document.getElementById('menu-canvas-size').onclick = () => {
+    closeAllMenus();
+    document.getElementById('canvas-w-input').value = canvasW;
+    document.getElementById('canvas-h-input').value = canvasH;
+    sizeDialog.style.display = 'flex';
+  };
+  document.getElementById('canvas-size-cancel').onclick = () => sizeDialog.style.display = 'none';
+  document.getElementById('canvas-size-ok').onclick = () => {
+    const nw = parseInt(document.getElementById('canvas-w-input').value);
+    const nh = parseInt(document.getElementById('canvas-h-input').value);
+    if (nw > 0 && nh > 0) {
+      if (confirm("Changing canvas size will clear your current work. Continue?")) {
+         initCanvas(nw, nh);
+         sizeDialog.style.display = 'none';
+      }
     }
+  };
 
-    paintCanvas.addEventListener('pointerdown', e => {
-      isDrawing = true;
-      lastGrid = null;
-      paintCanvas.setPointerCapture(e.pointerId);
+  document.getElementById('menu-save-gif').addEventListener('pointerdown', (e) => {
+    e.stopPropagation(); closeAllMenus(); exportGIF();
+  });
 
-      const pos = getGridPos(e);
-      const activeColor = getActiveColor(e);
-      const isEraser = currentPaint === 'eraser';
+  function renderFrameToCanvas(fakeTime) {
+    let tmpPaint = document.createElement('canvas');
+    tmpPaint.width = canvasW; tmpPaint.height = canvasH;
+    let tmpCtx = tmpPaint.getContext('2d');
 
-      if (pos.x < 0 || pos.x >= cols || pos.y < 0 || pos.y >= rows) return;
-
-      if (currentTool === 'pen') {
-        for (let dy = 0; dy < brushSize; dy++) {
-          for (let dx = 0; dx < brushSize; dx++) {
-            commitCell(pos.x + dx, pos.y + dy, activeColor, isEraser);
+    let fxCells = [];
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const cell = grid[y][x];
+        if (cell) {
+          if (cell.type.startsWith('fx-')) {
+            fxCells.push({ x, y, type: cell.type });
+          } else {
+            drawGlitchTool(tmpCtx, x * 12, y * 12, cell, fakeTime);
           }
         }
-      } else if (currentTool === 'fill') {
-        applyFillTool(pos, activeColor, isEraser);
-      } else if (currentTool === 'rect' || currentTool === 'select') {
-        startX = pos.x; startY = pos.y; currX = pos.x; currY = pos.y;
-        if (currentTool === 'select') {
+      }
+    }
+
+    let finalCanvas = document.createElement('canvas');
+    finalCanvas.width = canvasW; finalCanvas.height = canvasH;
+    let fCtx = finalCanvas.getContext('2d');
+    fCtx.drawImage(staticCanvas, 0, 0);
+    fCtx.drawImage(tmpPaint, 0, 0);
+    return finalCanvas;
+  }
+
+  async function exportGIF() {
+    const overlay = document.getElementById('gif-progress-overlay');
+    const statusText = document.getElementById('gif-status-text');
+    const progressBar = document.getElementById('gif-progress-bar');
+    overlay.style.display = 'flex';
+
+    const totalFrames = 30;
+    const frameDelay = 50;
+    const baseTime = performance.now();
+
+    statusText.textContent = 'Initializing encoder...';
+    let workerBlobUrl;
+    try {
+      const resp = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+      const blob = await resp.blob();
+      workerBlobUrl = URL.createObjectURL(blob);
+    } catch (err) {
+      alert('Failed to load GIF encoder worker script.');
+      overlay.style.display = 'none';
+      return;
+    }
+
+    const gif = new GIF({
+      workers: 2, quality: 10, width: canvasW, height: canvasH,
+      workerScript: workerBlobUrl, repeat: 0
+    });
+
+    for (let i = 0; i < totalFrames; i++) {
+      statusText.textContent = `Capturing frame ${i + 1} / ${totalFrames}...`;
+      progressBar.style.width = Math.round(((i + 1) / (totalFrames + 1)) * 50) + '%';
+      const fakeTime = baseTime + i * frameDelay;
+      const frameCanvas = renderFrameToCanvas(fakeTime);
+      gif.addFrame(frameCanvas, { delay: frameDelay, copy: true });
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    statusText.textContent = 'Encoding GIF...';
+    progressBar.style.width = '50%';
+
+    gif.on('progress', p => { progressBar.style.width = (50 + Math.round(p * 50)) + '%'; });
+    gif.on('finished', (blob) => {
+      URL.revokeObjectURL(workerBlobUrl);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'glitch-paint.gif';
+      a.click();
+      URL.revokeObjectURL(url);
+      overlay.style.display = 'none';
+    });
+    gif.render();
+  }
+
+  paintCanvas.addEventListener('pointermove', e => {
+    const coords = getGridPos(e);
+    document.getElementById('coords-status').innerText = `${coords.px}, ${coords.py}`;
+    if (!isDrawing) return;
+    if (coords.x < 0 || coords.x >= cols || coords.y < 0 || coords.y >= rows) return;
+
+    if (currentTool === 'pen') {
+      const activeColor = getActiveColor(e);
+      const isEraser = currentPaint === 'eraser';
+      applyPenTool(coords, activeColor, isEraser);
+    } else if (currentTool === 'rect' || currentTool === 'select') {
+      currX = coords.x; currY = coords.y;
+    }
+  });
+
+  paintCanvas.addEventListener('pointerup', e => {
+    isDrawing = false;
+    paintCanvas.releasePointerCapture(e.pointerId);
+
+    if (startX !== -1) {
+      let rMinX = Math.min(startX, currX); let rMaxX = Math.max(startX, currX);
+      let rMinY = Math.min(startY, currY); let rMaxY = Math.max(startY, currY);
+
+      if (currentTool === 'rect') {
+        const activeColor = getActiveColor(e);
+        const isEraser = currentPaint === 'eraser';
+        for (let y = rMinY; y <= rMaxY; y++) {
+          for (let x = rMinX; x <= rMaxX; x++) {
+            commitCell(x, y, activeColor, isEraser);
+          }
+        }
+      } else if (currentTool === 'select') {
+        if (rMaxX - rMinX > 0 && rMaxY - rMinY > 0) {
+          selection = { x: rMinX, y: rMinY, w: rMaxX - rMinX + 1, h: rMaxY - rMinY + 1 };
+        } else {
           selection = null;
         }
       }
-    });
-
-    // Keyboard and Menu Shortcuts
-    document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.key === 'z') undo();
-      if (e.ctrlKey && e.key === 'y') redo();
-    });
-
-    function closeAllMenus() {
-      editDropdown.style.display = 'none';
-      fileDropdown.style.display = 'none';
+      startX = -1;
     }
+    if (currentTool !== 'select') saveState();
+  });
 
-    const fileMenu = document.querySelector('.menu-file');
-    const fileDropdown = document.getElementById('file-dropdown');
-    fileMenu.addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-      editDropdown.style.display = 'none';
-      fileDropdown.style.display = fileDropdown.style.display === 'none' ? 'flex' : 'none';
-    });
+  paintCanvas.addEventListener('pause', () => isDrawing = false);
+  paintCanvas.addEventListener('contextmenu', e => e.preventDefault());
 
-    const editMenu = document.querySelector('.menu-edit');
-    const editDropdown = document.getElementById('edit-dropdown');
-    editMenu.addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-      fileDropdown.style.display = 'none';
-      editDropdown.style.display = editDropdown.style.display === 'none' ? 'flex' : 'none';
-    });
-    document.addEventListener('pointerdown', () => closeAllMenus());
+  function drawGlitchTool(targetCtx, px, py, cell, time) {
+    const { type, color, offset } = cell;
+    const t = time + offset * 1000;
 
-    document.getElementById('menu-undo').addEventListener('pointerdown', undo);
-    document.getElementById('menu-redo').addEventListener('pointerdown', redo);
-
-    // ── GIF Export ──────────────────────────────────────────
-    document.getElementById('menu-save-gif').addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-      closeAllMenus();
-      exportGIF();
-    });
-
-    function renderFrameToCanvas(fakeTime) {
-      // Render one full composite frame at a given timestamp onto a temporary canvas
-      let tmpPaint = document.createElement('canvas');
-      tmpPaint.width = 1024; tmpPaint.height = 1024;
-      let tmpCtx = tmpPaint.getContext('2d');
-
-      // Draw standard glitch cells, collect fx cells
-      let fxCells = [];
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          const cell = grid[y][x];
-          if (cell) {
-            if (cell.type.startsWith('fx-')) {
-              fxCells.push({ x, y, type: cell.type });
-            } else {
-              drawGlitchTool(tmpCtx, x * 12, y * 12, cell, fakeTime);
-            }
-          }
-        }
-      }
-
-      // Process fx cells
-      if (fxCells.length > 0) {
-        let compCtx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
-        compCtx.canvas.width = 1024; compCtx.canvas.height = 1024;
-        compCtx.drawImage(staticCanvas, 0, 0);
-        compCtx.drawImage(tmpPaint, 0, 0);
-        fxCells.forEach(cell => {
-          processAreaEffect(compCtx, cell.x * 12, cell.y * 12, 12, 12, cell.type, fakeTime);
-        });
-        fxCells.forEach(cell => {
-          tmpCtx.drawImage(compCtx.canvas, cell.x * 12, cell.y * 12, 12, 12, cell.x * 12, cell.y * 12, 12, 12);
-        });
-      }
-
-      // Final composite: static background + animated overlay
-      let finalCanvas = document.createElement('canvas');
-      finalCanvas.width = 1024; finalCanvas.height = 1024;
-      let fCtx = finalCanvas.getContext('2d');
-      fCtx.drawImage(staticCanvas, 0, 0);
-      fCtx.drawImage(tmpPaint, 0, 0);
-      return finalCanvas;
-    }
-
-    async function exportGIF() {
-      const overlay = document.getElementById('gif-progress-overlay');
-      const statusText = document.getElementById('gif-status-text');
-      const progressBar = document.getElementById('gif-progress-bar');
-      overlay.style.display = 'flex';
-
-      const totalFrames = 60;     // ~3 seconds of animation at 50ms/frame
-      const frameDelay = 50;      // ms between frames in the GIF
-      const baseTime = performance.now();
-
-      // Fetch the worker script from CDN and create a blob URL
-      statusText.textContent = 'Initializing encoder...';
-      let workerBlobUrl;
-      try {
-        const resp = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
-        const blob = await resp.blob();
-        workerBlobUrl = URL.createObjectURL(blob);
-      } catch (err) {
-        alert('Failed to load GIF encoder worker. Check your internet connection.');
-        overlay.style.display = 'none';
-        return;
-      }
-
-      const gif = new GIF({
-        workers: 2,
-        quality: 10,
-        width: 1024,
-        height: 1024,
-        workerScript: workerBlobUrl,
-        repeat: 0  // loop forever
-      });
-
-      // Capture frames
-      let firstFrameCanvas = null;
-      for (let i = 0; i < totalFrames; i++) {
-        statusText.textContent = `Capturing frame ${i + 1} / ${totalFrames}...`;
-        progressBar.style.width = Math.round(((i + 1) / (totalFrames + 1)) * 50) + '%';
-
-        const fakeTime = baseTime + i * frameDelay;
-        const frameCanvas = renderFrameToCanvas(fakeTime);
-        gif.addFrame(frameCanvas, { delay: frameDelay, copy: true });
-
-        if (i === 0) firstFrameCanvas = frameCanvas;
-
-        // Yield to browser so progress bar updates
-        await new Promise(r => setTimeout(r, 0));
-      }
-
-      // Duplicate first frame at the end for seamless loop
-      gif.addFrame(firstFrameCanvas, { delay: frameDelay, copy: true });
-
-      statusText.textContent = 'Encoding GIF...';
-      progressBar.style.width = '50%';
-
-      gif.on('progress', p => {
-        progressBar.style.width = (50 + Math.round(p * 50)) + '%';
-      });
-
-      gif.on('finished', (blob) => {
-        URL.revokeObjectURL(workerBlobUrl);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'glitch-paint.gif';
-        a.click();
-        URL.revokeObjectURL(url);
-        overlay.style.display = 'none';
-      });
-
-      gif.render();
-    }
-
-    paintCanvas.addEventListener('pointermove', e => {
-      const coords = getGridPos(e);
-      document.getElementById('coords-status').innerText = `${coords.px}, ${coords.py}`;
-      if (!isDrawing) return;
-
-      if (coords.x < 0 || coords.x >= cols || coords.y < 0 || coords.y >= rows) return;
-
-      if (currentTool === 'pen') {
-        const activeColor = getActiveColor(e);
-        const isEraser = currentPaint === 'eraser';
-        applyPenTool(coords, activeColor, isEraser);
-      } else if (currentTool === 'rect' || currentTool === 'select') {
-        currX = coords.x; currY = coords.y;
-      }
-    });
-
-    paintCanvas.addEventListener('pointerup', e => {
-      isDrawing = false;
-      paintCanvas.releasePointerCapture(e.pointerId);
-
-      if (startX !== -1) {
-        let rMinX = Math.min(startX, currX); let rMaxX = Math.max(startX, currX);
-        let rMinY = Math.min(startY, currY); let rMaxY = Math.max(startY, currY);
-
-        if (currentTool === 'rect') {
-          const activeColor = getActiveColor(e);
-          const isEraser = currentPaint === 'eraser';
-          for (let y = rMinY; y <= rMaxY; y++) {
-            for (let x = rMinX; x <= rMaxX; x++) {
-              commitCell(x, y, activeColor, isEraser);
-            }
-          }
-        } else if (currentTool === 'select') {
-          if (rMaxX - rMinX > 0 && rMaxY - rMinY > 0) {
-            selection = { x: rMinX, y: rMinY, w: rMaxX - rMinX + 1, h: rMaxY - rMinY + 1 };
-          } else {
-            selection = null;
-          }
-        }
-        startX = -1;
-      }
-
-      if (currentTool !== 'select') {
-        saveState();
-      }
-    });
-
-    paintCanvas.addEventListener('pause', e => isDrawing = false);
-
-    paintCanvas.addEventListener('contextmenu', e => e.preventDefault());
-
-    // Rendering
-    function drawGlitchTool(targetCtx, px, py, cell, time) {
-      const { type, color, offset } = cell;
-      const t = time + offset * 1000;
-
-      switch (type) {
-        case 'solid':
-          targetCtx.fillStyle = color;
-          targetCtx.fillRect(px, py, 12, 12);
-          break;
-
-        case 'eraser':
-          targetCtx.fillStyle = bgColor;
-          targetCtx.fillRect(px, py, 12, 12);
-          // outline for UI icon clarity
-          targetCtx.strokeStyle = '#808080';
-          targetCtx.lineWidth = 1;
-          targetCtx.strokeRect(px + 0.5, py + 0.5, 11, 11);
-          break;
-
-        case 'noise':
-          for (let i = 0; i < 12; i += 3) {
-            for (let j = 0; j < 12; j += 3) {
-              if (Math.random() > 0.3) {
-                targetCtx.fillStyle = Math.random() > 0.5 ? color : invertColor(color);
-                targetCtx.fillRect(px + i, py + j, 3, 3);
-              }
-            }
-          }
-          break;
-
-        case 'h-scan':
-          targetCtx.fillStyle = color;
-          let yOffset = Math.floor(t / 30) % 12;
-          for (let i = 0; i < 3; i++) {
-            let lineY = (yOffset + i * 4) % 12;
-            targetCtx.fillRect(px, py + lineY, 12, 2);
-          }
-          break;
-
-        case 'v-scan':
-          targetCtx.fillStyle = color;
-          let xOffset = Math.floor(t / 30) % 12;
-          for (let i = 0; i < 3; i++) {
-            let lineX = (xOffset + i * 4) % 12;
-            targetCtx.fillRect(px + lineX, py, 2, 12);
-          }
-          break;
-
-        case 'strobe':
-          const st = Math.floor(t / 80) % 3;
-          if (st === 0) { targetCtx.fillStyle = color; targetCtx.fillRect(px, py, 12, 12); }
-          else if (st === 1) { targetCtx.fillStyle = invertColor(color); targetCtx.fillRect(px, py, 12, 12); }
-          break;
-
-        case 'checkers':
-          const frame = Math.floor(t / 200) % 2;
-          for (let i = 0; i < 12; i += 4) {
-            for (let j = 0; j < 12; j += 4) {
-              if (((i / 4 + j / 4) % 2) === frame) {
-                targetCtx.fillStyle = color;
-                targetCtx.fillRect(px + i, py + j, 4, 4);
-              }
-            }
-          }
-          break;
-
-        case 'sine':
-          targetCtx.fillStyle = color;
-          for (let i = 0; i < 12; i += 2) {
-            let waveY = 5 + Math.round(Math.sin((t / 200) + i * 0.5) * 4);
-            targetCtx.fillRect(px + i, py + waveY, 2, 2);
-          }
-          break;
-
-        case 'matrix':
-          targetCtx.fillStyle = color;
-          let frameT = Math.floor(t / 50 + offset * 100);
-          for (let i = 0; i < 12; i += 4) {
-            let localY = (frameT + i * 3) % 12;
-            if (localY + 3 > 12) {
-              let overflow = (localY + 3) - 12;
-              targetCtx.fillRect(px + i, py + localY, 3, 12 - localY);
-              targetCtx.fillRect(px + i, py, 3, overflow);
-            } else {
-              targetCtx.fillRect(px + i, py + localY, 3, 3);
-            }
-          }
-          break;
-
-        case 'rgb-split':
-          let shift = Math.floor(Math.random() * 3) - 1;
-          targetCtx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-          targetCtx.fillRect(px + 1 + shift, py, 10, 12);
-          targetCtx.fillStyle = 'rgba(0, 255, 0, 0.5)';
-          targetCtx.fillRect(px + 1 - shift, py, 10, 12);
-          targetCtx.fillStyle = 'rgba(0, 0, 255, 0.5)';
-          targetCtx.fillRect(px + 1, py, 10, 12);
-          break;
-
-        case 'vhs':
-          for (let i = 0; i < 12; i += 3) {
-            if (Math.random() < 0.4) {
-              let offsetX = Math.floor(Math.random() * 4) - 2;
-              targetCtx.fillStyle = invertColor(color);
-              let startX = Math.max(0, offsetX);
-              let drawW = Math.min(12, 12 + offsetX) - startX;
-              if (drawW > 0) targetCtx.fillRect(px + startX, py + i, drawW, 2);
-            }
-          }
-          break;
-
-        case 'static-glitch':
-          if (Math.random() < 0.2) {
-            targetCtx.fillStyle = invertColor(color);
-            let rx = Math.floor(Math.random() * 6);
-            let ry = Math.floor(Math.random() * 6);
-            let rw = Math.floor(Math.random() * 6) + 2;
-            let rh = Math.floor(Math.random() * 6) + 2;
-            targetCtx.fillRect(px + rx, py + ry, rw, rh);
-          }
-          break;
-
-        case 'dither':
-          const bayer = [
-            [0, 8, 2, 10],
-            [12, 4, 14, 6],
-            [3, 11, 1, 9],
-            [15, 7, 13, 5]
-          ];
-          let thresh = (Math.floor(t / 100) % 16);
-          for (let i = 0; i < 12; i++) {
-            for (let j = 0; j < 12; j++) {
-              targetCtx.fillStyle = (bayer[j % 4][i % 4] < thresh) ? color : invertColor(color);
-              targetCtx.fillRect(px + i, py + j, 1, 1);
-            }
-          }
-          break;
-
-        case 'barcode':
-          let bcOffset = Math.floor(t / 40) % 12;
-          targetCtx.fillStyle = color;
-          for (let i = 0; i < 12; i += 3) {
-            let width = (i * 7 + bcOffset) % 4;
-            let xOffset = (i * 3 + bcOffset) % 12;
-            targetCtx.fillRect(px + xOffset, py, width, 12);
-          }
-          break;
-
-        case 'tv-roll':
-          let rollY = Math.floor(t / 20) % 12;
-          targetCtx.fillStyle = color;
-          targetCtx.fillRect(px, py + rollY, 12, 4);
-          if (rollY > 8) {
-            targetCtx.fillRect(px, py, 12, rollY - 8);
-          }
-          break;
-
-        case 'pulse':
-          let pSize = Math.floor(t / 100) % 6;
-          targetCtx.fillStyle = color;
-          targetCtx.fillRect(px + 6 - pSize, py + 6 - pSize, pSize * 2, pSize * 2);
-          if (pSize > 2) {
-            targetCtx.fillStyle = invertColor(color);
-            targetCtx.fillRect(px + 6 - (pSize - 2), py + 6 - (pSize - 2), (pSize - 2) * 2, (pSize - 2) * 2);
-          }
-          break;
-
-        case 'sparkle':
-          targetCtx.fillStyle = color;
-          targetCtx.fillRect(px, py, 12, 12);
-          targetCtx.fillStyle = '#ffffff';
-          if (Math.random() < 0.2) {
-            let sx = Math.floor(Math.random() * 12);
-            let sy = Math.floor(Math.random() * 12);
-            targetCtx.fillRect(px + sx, py + sy, 1, 1);
-            if (sx > 0) targetCtx.fillRect(px + sx - 1, py + sy, 3, 1);
-            if (sy > 0) targetCtx.fillRect(px + sx, py + sy - 1, 1, 3);
-          }
-          break;
-
-        case 'rgb-shift':
-          let phase = (t / 1000) * Math.PI * 2;
-          let rxOffset = Math.sin(phase) * 3 + 3;
-          let gxOffset = Math.sin(phase + 2) * 3 + 3;
-          let bxOffset = Math.sin(phase + 4) * 3 + 3;
-          targetCtx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-          targetCtx.fillRect(px + rxOffset, py, 4, 12);
-          targetCtx.fillStyle = 'rgba(0, 255, 0, 0.5)';
-          targetCtx.fillRect(px + gxOffset, py, 4, 12);
-          targetCtx.fillStyle = 'rgba(0, 0, 255, 0.5)';
-          targetCtx.fillRect(px + bxOffset, py, 4, 12);
-          break;
-
-        case 'scan-glitch':
-          for (let j = 0; j < 12; j += 2) {
-            let shake = (Math.random() < 0.1 && Math.sin(t / 100) > 0) ? Math.floor(Math.random() * 4) - 2 : 0;
-            targetCtx.fillStyle = color;
-            targetCtx.fillRect(px + shake, py + j, 12, 2);
-          }
-          break;
-
-        case 'blocks':
-          let blockFrame = Math.floor(t / 150);
-          for (let i = 0; i < 12; i += 4) {
-            for (let j = 0; j < 12; j += 4) {
-              if (((i * 3 + j * 7 + blockFrame) % 5) < 2) {
-                targetCtx.fillStyle = color;
-                if (i + 4 <= 12 && j + 4 <= 12) targetCtx.fillRect(px + i, py + j, 4, 4);
-              }
-            }
-          }
-          break;
-
-        case 'zigzag':
-          targetCtx.fillStyle = color;
-          let zzOffset = Math.floor(t / 50) % 12;
-          for (let j = 0; j < 12; j++) {
-            let zzX = (j + zzOffset) % 6;
-            if (zzX > 3) zzX = 6 - zzX;
-            targetCtx.fillRect(px + zzX * 2, py + j, 2, 1);
-          }
-          break;
-
-        case 'hypnotic':
-          let hypFrame = Math.floor(t / 100) % 6;
-          for (let r = 6; r > 0; r--) {
-            targetCtx.fillStyle = (r % 2 === hypFrame % 2) ? color : invertColor(color);
-            targetCtx.fillRect(px + 6 - r, py + 6 - r, r * 2, r * 2);
-          }
-          break;
-
-        case 'crt-warp':
-          targetCtx.fillStyle = color;
+    switch (type) {
+      case 'solid': targetCtx.fillStyle = color; targetCtx.fillRect(px, py, 12, 12); break;
+      case 'eraser':
+        targetCtx.fillStyle = bgColor; targetCtx.fillRect(px, py, 12, 12);
+        targetCtx.strokeStyle = '#808080'; targetCtx.lineWidth = 1;
+        targetCtx.strokeRect(px + 0.5, py + 0.5, 11, 11); break;
+      case 'noise':
+        for (let i = 0; i < 12; i += 3) {
           for (let j = 0; j < 12; j += 3) {
-            let bow = Math.sin((j / 12) * Math.PI) * 2;
-            let offsetWarp = Math.sin(t / 300 + j * 0.5) * bow;
-            targetCtx.fillRect(px + 1 + offsetWarp, py + j, 10, 3);
+            if (Math.random() > 0.3) {
+              targetCtx.fillStyle = Math.random() > 0.5 ? color : invertColor(color);
+              targetCtx.fillRect(px + i, py + j, 3, 3);
+            }
           }
-          break;
-
-        case 'pixel-burn':
-          if (Math.random() < 0.3) {
-            let rPx = Math.floor(Math.random() * 12);
-            let rPy = Math.floor(Math.random() * 12);
-            targetCtx.fillStyle = color;
-            targetCtx.fillRect(px + rPx, py + rPy, 2, 2);
+        }
+        break;
+      case 'h-scan':
+        targetCtx.fillStyle = color;
+        let yOffset = Math.floor(t / 30) % 12;
+        for (let i = 0; i < 3; i++) {
+          let lineY = (yOffset + i * 4) % 12;
+          targetCtx.fillRect(px, py + lineY, 12, 2);
+        }
+        break;
+      case 'v-scan':
+        targetCtx.fillStyle = color;
+        let xOffset = Math.floor(t / 30) % 12;
+        for (let i = 0; i < 3; i++) {
+          let lineX = (xOffset + i * 4) % 12;
+          targetCtx.fillRect(px + lineX, py, 2, 12);
+        }
+        break;
+      case 'strobe':
+        const st = Math.floor(t / 80) % 3;
+        if (st === 0) { targetCtx.fillStyle = color; targetCtx.fillRect(px, py, 12, 12); }
+        else if (st === 1) { targetCtx.fillStyle = invertColor(color); targetCtx.fillRect(px, py, 12, 12); }
+        break;
+      case 'checkers':
+        const frame = Math.floor(t / 200) % 2;
+        for (let i = 0; i < 12; i += 4) {
+          for (let j = 0; j < 12; j += 4) {
+            if (((i / 4 + j / 4) % 2) === frame) {
+              targetCtx.fillStyle = color; targetCtx.fillRect(px + i, py + j, 4, 4);
+            }
+          }
+        }
+        break;
+      case 'sine':
+        targetCtx.fillStyle = color;
+        for (let i = 0; i < 12; i += 2) {
+          let waveY = 5 + Math.round(Math.sin((t / 200) + i * 0.5) * 4);
+          targetCtx.fillRect(px + i, py + waveY, 2, 2);
+        }
+        break;
+      case 'matrix':
+        targetCtx.fillStyle = color;
+        let frameT = Math.floor(t / 50 + offset * 100);
+        for (let i = 0; i < 12; i += 4) {
+          let localY = (frameT + i * 3) % 12;
+          if (localY + 3 > 12) {
+            let overflow = (localY + 3) - 12;
+            targetCtx.fillRect(px + i, py + localY, 3, 12 - localY);
+            targetCtx.fillRect(px + i, py, 3, overflow);
+          } else {
+            targetCtx.fillRect(px + i, py + localY, 3, 3);
+          }
+        }
+        break;
+      case 'rgb-split':
+        let shift = Math.floor(Math.random() * 3) - 1;
+        targetCtx.fillStyle = 'rgba(255, 0, 0, 0.5)'; targetCtx.fillRect(px + 1 + shift, py, 10, 12);
+        targetCtx.fillStyle = 'rgba(0, 255, 0, 0.5)'; targetCtx.fillRect(px + 1 - shift, py, 10, 12);
+        targetCtx.fillStyle = 'rgba(0, 0, 255, 0.5)'; targetCtx.fillRect(px + 1, py, 10, 12);
+        break;
+      case 'vhs':
+        for (let i = 0; i < 12; i += 3) {
+          if (Math.random() < 0.4) {
+            let offsetX = Math.floor(Math.random() * 4) - 2;
             targetCtx.fillStyle = invertColor(color);
-            targetCtx.fillRect(px + rPx + 1, py + rPy + 1, 1, 1);
+            let startX = Math.max(0, offsetX);
+            let drawW = Math.min(12, 12 + offsetX) - startX;
+            if (drawW > 0) targetCtx.fillRect(px + startX, py + i, drawW, 2);
           }
-          break;
-
-        case 'wipe':
-          let wPos = Math.floor(t / 50) % 24 - 12;
-          targetCtx.fillStyle = color;
-          if (wPos > -12 && wPos < 12) {
-            targetCtx.fillRect(px, py, wPos, 12);
-          } else if (wPos >= 12) {
-            targetCtx.fillRect(px, py, 12, 12);
-          }
-          break;
-
-        case 'static-lines':
-          if (Math.random() < 0.5) {
-            targetCtx.fillStyle = color;
-            targetCtx.fillRect(px, py + Math.floor(t / 50) % 12, 12, 1);
-            if (Math.random() < 0.2) targetCtx.fillRect(px, py + Math.floor(t / 30) % 12, 12, 1);
-          }
-          break;
-
-        case 'bit-shift':
-          targetCtx.fillStyle = color;
-          let bShift = (Math.floor(t / 150) % 2 === 0) ? 2 : -2;
-          targetCtx.fillRect(px + bShift, py, 12 - Math.abs(bShift), 12);
-          break;
-
-        case 'error-box':
-          targetCtx.fillStyle = color;
-          targetCtx.fillRect(px, py, 12, 12);
-          let eFrame = Math.floor(t / 200) % 2;
-          if (eFrame === 0) {
-            targetCtx.clearRect(px + 2, py + 2, 8, 8);
-            targetCtx.fillStyle = invertColor(color);
-            targetCtx.fillRect(px + 4, py + 4, 4, 4);
-          }
-          break;
-
-        case 'tape-delay':
-          targetCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-          targetCtx.fillRect(px, py, 12, 12);
-          targetCtx.fillStyle = color;
-          targetCtx.globalAlpha = 1.0;
-          let dOff = Math.floor(t / 80) % 4;
-          targetCtx.fillRect(px + dOff, py + dOff, 12 - dOff * 2, 12 - dOff * 2);
-          break;
-
-        case 'corrupt':
+        }
+        break;
+      case 'static-glitch':
+        if (Math.random() < 0.2) {
           targetCtx.fillStyle = invertColor(color);
-          for (let i = 0; i < 3; i++) {
-            let cx = Math.floor(Math.random() * 10);
-            let cy = Math.floor(Math.random() * 10);
-            targetCtx.fillRect(px + cx, py + cy, (cx % 3) + 1, (cy % 3) + 1);
-          }
-          break;
-
-        case 'wireframe':
-          targetCtx.strokeStyle = color;
-          targetCtx.lineWidth = 1;
-          targetCtx.strokeRect(px + 1, py + 1, 10, 10);
-          targetCtx.beginPath();
-          targetCtx.moveTo(px + 1, py + 1); targetCtx.lineTo(px + 11, py + 11);
-          targetCtx.moveTo(px + 11, py + 1); targetCtx.lineTo(px + 1, py + 11);
-          targetCtx.stroke();
-          break;
-
-        case 'float':
-          targetCtx.fillStyle = color;
-          let fOff = Math.round(Math.sin(t / 200) * 3);
-          targetCtx.fillRect(px + 4, py + 4 + fOff, 4, 4);
-          break;
-      }
-    }
-
-    function rgbToHsl(r, g, b) {
-      r /= 255, g /= 255, b /= 255;
-      let max = Math.max(r, g, b), min = Math.min(r, g, b);
-      let h, s, l = (max + min) / 2;
-      if (max == min) { h = s = 0; }
-      else {
-        let d = max - min; s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; case b: h = (r - g) / d + 4; break; } h /= 6;
-      }
-      return [h, s, l];
-    }
-    function hslToRgb(h, s, l) {
-      let r, g, b;
-      if (s == 0) r = g = b = l;
-      else {
-        function hue2rgb(p, q, t) {
-          if (t < 0) t += 1; if (t > 1) t -= 1;
-          if (t < 1 / 6) return p + (q - p) * 6 * t;
-          if (t < 1 / 2) return q;
-          if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-          return p;
+          let rx = Math.floor(Math.random() * 6);
+          let ry = Math.floor(Math.random() * 6);
+          let rw = Math.floor(Math.random() * 6) + 2;
+          let rh = Math.floor(Math.random() * 6) + 2;
+          targetCtx.fillRect(px + rx, py + ry, rw, rh);
         }
-        let q = l < 0.5 ? l * (1 + s) : l + s - l * s; let p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1 / 3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1 / 3);
-      }
-      return [r * 255, g * 255, b * 255];
-    }
-
-    function processAreaEffect(areaCtx, sx, sy, sw, sh, fxId, time) {
-      let imgData = areaCtx.getImageData(sx, sy, sw, sh);
-      let data = imgData.data;
-
-      if (fxId === 'fx-hue') {
-        for (let i = 0; i < data.length; i += 4) {
-          let hsl = rgbToHsl(data[i], data[i + 1], data[i + 2]);
-          hsl[0] = (hsl[0] + (time / 3000)) % 1.0;
-          let rgb = hslToRgb(hsl[0], hsl[1], hsl[2]);
-          data[i] = rgb[0]; data[i + 1] = rgb[1]; data[i + 2] = rgb[2];
-        }
-      } else if (fxId === 'fx-solar') {
-        for (let i = 0; i < data.length; i += 4) {
-          let thold = 127 + Math.sin(time / 500) * 50;
-          data[i] = data[i] > thold ? 255 - data[i] : data[i];
-          data[i + 1] = data[i + 1] > thold ? 255 - data[i + 1] : data[i + 1];
-          data[i + 2] = data[i + 2] > thold ? 255 - data[i + 2] : data[i + 2];
-        }
-      } else if (fxId === 'fx-dither') {
-        for (let y = 0; y < sh; y++) {
-          for (let x = 0; x < sw; x++) {
-            let idx = (y * sw + x) * 4;
-            let oldR = data[idx]; let oldG = data[idx + 1]; let oldB = data[idx + 2];
-            let newR = oldR < 128 ? 0 : 255; let newG = oldG < 128 ? 0 : 255; let newB = oldB < 128 ? 0 : 255;
-            data[idx] = newR; data[idx + 1] = newG; data[idx + 2] = newB;
-            let errR = oldR - newR; let errG = oldG - newG; let errB = oldB - newB;
-            const distributeErr = (dx, dy, factor) => {
-              if (x + dx >= 0 && x + dx < sw && y + dy >= 0 && y + dy < sh) {
-                let i = ((y + dy) * sw + (x + dx)) * 4;
-                data[i] += errR * factor; data[i + 1] += errG * factor; data[i + 2] += errB * factor;
-              }
-            };
-            distributeErr(1, 0, 7 / 16); distributeErr(-1, 1, 3 / 16); distributeErr(0, 1, 5 / 16); distributeErr(1, 1, 1 / 16);
+        break;
+      case 'dither':
+        const bayer = [[0, 8, 2, 10],[12, 4, 14, 6],[3, 11, 1, 9],[15, 7, 13, 5]];
+        let thresh = (Math.floor(t / 100) % 16);
+        for (let i = 0; i < 12; i++) {
+          for (let j = 0; j < 12; j++) {
+            targetCtx.fillStyle = (bayer[j % 4][i % 4] < thresh) ? color : invertColor(color);
+            targetCtx.fillRect(px + i, py + j, 1, 1);
           }
         }
-      } else if (fxId === 'fx-sort') {
-        let sortOffset = Math.sin(time / 400) * 0.5 + 0.5;
-        for (let y = 0; y < sh; y++) {
-          let rowPixels = [];
-          for (let x = 0; x < sw; x++) {
-            let i = (y * sw + x) * 4; rowPixels.push({ r: data[i], g: data[i + 1], b: data[i + 2], a: data[i + 3] });
-          }
-          rowPixels.sort((a, b) => {
-            let w1 = (a.r + a.g + a.b); let w2 = (b.r + b.g + b.b);
-            return sortOffset > 0.5 ? w1 - w2 : w2 - w1;
-          });
-          for (let x = 0; x < sw; x++) {
-            let i = (y * sw + x) * 4;
-            data[i] = rowPixels[x].r; data[i + 1] = rowPixels[x].g; data[i + 2] = rowPixels[x].b; data[i + 3] = rowPixels[x].a;
-          }
-        }
-      } else if (fxId === 'fx-glow') {
-        let tempData = new Uint8ClampedArray(data); let rad = 4;
-        let pulse = Math.abs(Math.sin(time / 400)) * 0.8 + 0.2;
-        for (let y = rad; y < sh - rad; y++) {
-          for (let x = rad; x < sw - rad; x++) {
-            let i = (y * sw + x) * 4; let tr = 0, tg = 0, tb = 0;
-            for (let dy = -rad; dy <= rad; dy++) {
-              for (let dx = -rad; dx <= rad; dx++) {
-                let sIdx = ((y + dy) * sw + (x + dx)) * 4; tr += tempData[sIdx]; tg += tempData[sIdx + 1]; tb += tempData[sIdx + 2];
-              }
-            }
-            let count = Math.pow(rad * 2 + 1, 2);
-            data[i] = Math.min(255, data[i] + tr / count * pulse); data[i + 1] = Math.min(255, data[i + 1] + tg / count * pulse); data[i + 2] = Math.min(255, data[i + 2] + tb / count * pulse);
-          }
-        }
-      } else if (fxId === 'fx-sharp') {
-        let tempData = new Uint8ClampedArray(data);
-        let intensity = Math.sin(time / 200) * 2 + 5;
-        const kernel = [0, -1, 0, -1, intensity, -1, 0, -1, 0];
-        for (let y = 1; y < sh - 1; y++) {
-          for (let x = 1; x < sw - 1; x++) {
-            let i = (y * sw + x) * 4; let r = 0, g = 0, b = 0;
-            for (let ky = -1; ky <= 1; ky++) {
-              for (let kx = -1; kx <= 1; kx++) {
-                let kIdx = ((ky + 1) * 3 + (kx + 1)); let pIdx = ((y + ky) * sw + (x + kx)) * 4;
-                r += tempData[pIdx] * kernel[kIdx]; g += tempData[pIdx + 1] * kernel[kIdx]; b += tempData[pIdx + 2] * kernel[kIdx];
-              }
-            }
-            data[i] = Math.min(255, Math.max(0, r)); data[i + 1] = Math.min(255, Math.max(0, g)); data[i + 2] = Math.min(255, Math.max(0, b));
-          }
-        }
-      } else if (fxId === 'fx-smudge') {
-        let tempData = new Uint8ClampedArray(data);
-        let dirX = Math.round(Math.cos(time / 300) * 2);
-        let dirY = Math.round(Math.sin(time / 200) * 2);
-        for (let y = 2; y < sh - 2; y++) {
-          for (let x = 2; x < sw - 2; x++) {
-            let clampX = Math.min(Math.max(x + dirX, 0), sw - 1);
-            let clampY = Math.min(Math.max(y + dirY, 0), sh - 1);
-            let srcIdx = (clampY * sw + clampX) * 4;
-            let dstIdx = (y * sw + x) * 4;
-            data[dstIdx] = tempData[srcIdx]; data[dstIdx + 1] = tempData[srcIdx + 1]; data[dstIdx + 2] = tempData[srcIdx + 2];
-          }
-        }
-      }
-      areaCtx.putImageData(imgData, sx, sy);
-    }
+        break;
 
-    function render(time) {
-      ctx.clearRect(0, 0, 1024, 1024);
+      case 'barcode':
+        targetCtx.fillStyle = color;
+        let bcOffset = Math.floor(t / 40) % 12;
+        for (let i = 0; i < 12; i += 3) {
+          let width = (i * 7 + bcOffset) % 4;
+          let xOffset = (i * 3 + bcOffset) % 12;
+          targetCtx.fillRect(px + xOffset, py, width, 12);
+        }
+        break;
 
-      // 1) First pass: Draw standard glitches, collect individual fx cells
-      let activeFxCells = [];
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          const cell = grid[y][x];
-          if (cell) {
-            if (cell.type.startsWith('fx-')) {
-              activeFxCells.push({ x, y, type: cell.type });
-            } else {
-              drawGlitchTool(ctx, x * 12, y * 12, cell, time);
+      case 'tv-roll':
+        let rollY = Math.floor(t / 20) % 12;
+        targetCtx.fillStyle = color; targetCtx.fillRect(px, py + rollY, 12, 4);
+        if (rollY > 8) targetCtx.fillRect(px, py, 12, rollY - 8);
+        break;
+
+      case 'pulse':
+        let pSize = Math.floor(t / 100) % 6;
+        targetCtx.fillStyle = color; targetCtx.fillRect(px + 6 - pSize, py + 6 - pSize, pSize * 2, pSize * 2);
+        if (pSize > 2) {
+          targetCtx.fillStyle = invertColor(color);
+          targetCtx.fillRect(px + 6 - (pSize - 2), py + 6 - (pSize - 2), (pSize - 2) * 2, (pSize - 2) * 2);
+        }
+        break;
+
+      case 'sparkle':
+        targetCtx.fillStyle = color; targetCtx.fillRect(px, py, 12, 12);
+        targetCtx.fillStyle = '#ffffff';
+        if (Math.random() < 0.3) {
+          let sx = Math.floor(Math.random() * 12);
+          let sy = Math.floor(Math.random() * 12);
+          targetCtx.fillRect(px + sx, py + sy, 2, 2);
+        }
+        break;
+
+      case 'rgb-shift':
+        let phase = (t / 1000) * Math.PI * 2;
+        let rxOffset = Math.sin(phase) * 3 + 3;
+        let gxOffset = Math.sin(phase + 2) * 3 + 3;
+        let bxOffset = Math.sin(phase + 4) * 3 + 3;
+        targetCtx.fillStyle = 'rgba(255, 0, 0, 0.6)'; targetCtx.fillRect(px + rxOffset, py, 4, 12);
+        targetCtx.fillStyle = 'rgba(0, 255, 0, 0.6)'; targetCtx.fillRect(px + gxOffset, py, 4, 12);
+        targetCtx.fillStyle = 'rgba(0, 0, 255, 0.6)'; targetCtx.fillRect(px + bxOffset, py, 4, 12);
+        break;
+
+      case 'scan-glitch':
+        for (let j = 0; j < 12; j += 2) {
+          let shake = (Math.random() < 0.2 && Math.sin(t / 100) > 0) ? Math.floor(Math.random() * 4) - 2 : 0;
+          targetCtx.fillStyle = color; targetCtx.fillRect(px + shake, py + j, 12, 2);
+        }
+        break;
+
+      case 'blocks':
+        let blockFrame = Math.floor(t / 150);
+        for (let i = 0; i < 12; i += 4) {
+          for (let j = 0; j < 12; j += 4) {
+            if (((i * 3 + j * 7 + blockFrame) % 5) < 2) {
+              targetCtx.fillStyle = color; targetCtx.fillRect(px + i, py + j, 4, 4);
             }
           }
         }
-      }
+        break;
 
-      // 2) Second pass: Process fx cells using flattened background+glitch composite
-      if (activeFxCells.length > 0) {
-        let compositeCtx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
-        compositeCtx.canvas.width = 1024; compositeCtx.canvas.height = 1024;
-        compositeCtx.drawImage(staticCanvas, 0, 0);
-        compositeCtx.drawImage(paintCanvas, 0, 0);
-
-        activeFxCells.forEach(cell => {
-          processAreaEffect(compositeCtx, cell.x * 12, cell.y * 12, 12, 12, cell.type, time);
-        });
-
-        // Re-draw processed regions to exactly where the fx cells live
-        activeFxCells.forEach(cell => {
-          ctx.drawImage(compositeCtx.canvas, cell.x * 12, cell.y * 12, 12, 12, cell.x * 12, cell.y * 12, 12, 12);
-        });
-      }
-
-      if (isDrawing && currentTool === 'rect' && startX !== -1) {
-        let rMinX = Math.min(startX, currX); let rMaxX = Math.max(startX, currX);
-        let rMinY = Math.min(startY, currY); let rMaxY = Math.max(startY, currY);
-
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-        ctx.fillRect(rMinX * 12, rMinY * 12, (rMaxX - rMinX + 1) * 12, (rMaxY - rMinY + 1) * 12);
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(rMinX * 12, rMinY * 12, (rMaxX - rMinX + 1) * 12, (rMaxY - rMinY + 1) * 12);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(rMinX * 12, rMinY * 12, (rMaxX - rMinX + 1) * 12, (rMaxY - rMinY + 1) * 12);
-        ctx.setLineDash([]);
-      }
-
-      if (selection) {
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(selection.x * 12, selection.y * 12, selection.w * 12, selection.h * 12);
-
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 1;
-        ctx.lineDashOffset = -(time / 50);
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(selection.x * 12, selection.y * 12, selection.w * 12, selection.h * 12);
-        ctx.setLineDash([]);
-      } else if (isDrawing && currentTool === 'select' && startX !== -1) {
-        let rMinX = Math.min(startX, currX); let rMaxX = Math.max(startX, currX);
-        let rMinY = Math.min(startY, currY); let rMaxY = Math.max(startY, currY);
-
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(rMinX * 12, rMinY * 12, (rMaxX - rMinX + 1) * 12, (rMaxY - rMinY + 1) * 12);
-
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 1;
-        ctx.lineDashOffset = -(time / 50);
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(rMinX * 12, rMinY * 12, (rMaxX - rMinX + 1) * 12, (rMaxY - rMinY + 1) * 12);
-        ctx.setLineDash([]);
-      }
-
-      // Animate toolbar icons
-      paintPatterns.forEach(paintId => {
-        const c = document.getElementById(`icon-${paintId}`);
-        if (c) {
-          const btx = c.getContext('2d');
-          btx.clearRect(0, 0, 16, 16);
-          const dummyCell = { type: paintId, color: fgColor, offset: 0 };
-          drawGlitchTool(btx, 2, 2, dummyCell, time);
+      case 'zigzag':
+        targetCtx.fillStyle = color;
+        let zzOffset = Math.floor(t / 50) % 12;
+        for (let j = 0; j < 12; j++) {
+          let zzX = (j + zzOffset) % 6; if (zzX > 3) zzX = 6 - zzX;
+          targetCtx.fillRect(px + zzX * 2, py + j, 2, 1);
         }
-      });
+        break;
 
-      requestAnimationFrame(render);
+      case 'hypnotic':
+        let hypFrame = Math.floor(t / 100) % 6;
+        for (let r = 6; r > 0; r--) {
+          targetCtx.fillStyle = (r % 2 === hypFrame % 2) ? color : invertColor(color);
+          targetCtx.fillRect(px + 6 - r, py + 6 - r, r * 2, r * 2);
+        }
+        break;
+
+      case 'crt-warp':
+        targetCtx.fillStyle = color;
+        for (let j = 0; j < 12; j += 3) {
+          let bow = Math.sin((j / 12) * Math.PI) * 2;
+          let offsetWarp = Math.sin(t / 300 + j * 0.5) * bow;
+          targetCtx.fillRect(px + 1 + offsetWarp, py + j, 10, 3);
+        }
+        break;
+
+      case 'pixel-burn':
+        if (Math.random() < 0.4) {
+          let rPx = Math.floor(Math.random() * 12);
+          let rPy = Math.floor(Math.random() * 12);
+          targetCtx.fillStyle = color; targetCtx.fillRect(px + rPx, py + rPy, 2, 2);
+          targetCtx.fillStyle = invertColor(color); targetCtx.fillRect(px + rPx + 1, py + rPy + 1, 1, 1);
+        } else {
+          targetCtx.fillStyle = color; targetCtx.fillRect(px + 3, py + 3, 6, 6);
+        }
+        break;
+
+      case 'wipe':
+        let wPos = Math.floor(t / 50) % 24 - 12;
+        targetCtx.fillStyle = color;
+        if (wPos > -12 && wPos < 12) targetCtx.fillRect(px, py, Math.max(1, wPos + 12), 12);
+        else if (wPos >= 12) targetCtx.fillRect(px, py, 12, 12);
+        break;
+
+      case 'static-lines':
+        targetCtx.fillStyle = color;
+        targetCtx.fillRect(px, py + Math.floor(t / 50) % 12, 12, 1);
+        targetCtx.fillRect(px, py + Math.floor(t / 30) % 12, 12, 1);
+        break;
+
+      case 'bit-shift':
+        targetCtx.fillStyle = color;
+        let bShift = (Math.floor(t / 150) % 2 === 0) ? 2 : -2;
+        targetCtx.fillRect(px + Math.max(0, bShift), py, 12 - Math.abs(bShift), 12);
+        break;
+
+      case 'error-box':
+        targetCtx.fillStyle = color; targetCtx.fillRect(px, py, 12, 12);
+        let eFrame = Math.floor(t / 200) % 2;
+        if (eFrame === 0) {
+          targetCtx.clearRect(px + 2, py + 2, 8, 8);
+          targetCtx.fillStyle = invertColor(color); targetCtx.fillRect(px + 4, py + 4, 4, 4);
+        }
+        break;
+
+      case 'tape-delay':
+        targetCtx.fillStyle = 'rgba(200, 200, 200, 0.4)'; targetCtx.fillRect(px, py, 12, 12);
+        targetCtx.fillStyle = color;
+        let dOff = Math.floor(t / 80) % 4;
+        targetCtx.fillRect(px + dOff, py + dOff, 12 - dOff * 2, 12 - dOff * 2);
+        break;
+
+      case 'corrupt':
+        targetCtx.fillStyle = color; targetCtx.fillRect(px, py, 12, 12);
+        targetCtx.fillStyle = invertColor(color);
+        for (let i = 0; i < 3; i++) {
+          let cx = Math.floor(Math.random() * 10);
+          let cy = Math.floor(Math.random() * 10);
+          targetCtx.fillRect(px + cx, py + cy, (cx % 3) + 1, (cy % 3) + 1);
+        }
+        break;
+
+      case 'wireframe':
+        targetCtx.strokeStyle = color; targetCtx.lineWidth = 1;
+        targetCtx.strokeRect(px + 1, py + 1, 10, 10);
+        targetCtx.beginPath();
+        targetCtx.moveTo(px + 1, py + 1); targetCtx.lineTo(px + 11, py + 11);
+        targetCtx.moveTo(px + 11, py + 1); targetCtx.lineTo(px + 1, py + 11);
+        targetCtx.stroke();
+        break;
+
+      case 'float':
+        targetCtx.fillStyle = color;
+        let fOff = Math.round(Math.sin(t / 200) * 3);
+        targetCtx.fillRect(px + 3, py + 3 + fOff, 6, 6);
+        break;
+
+      default:
+        targetCtx.fillStyle = color; targetCtx.fillRect(px, py, 12, 12); break;
+    }
+  }
+
+  function invertColor(hex) {
+    if (!hex) return '#ffffff';
+    if (hex.indexOf('#') === 0) hex = hex.slice(1);
+    if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    let r = (255 - parseInt(hex.slice(0, 2), 16)).toString(16),
+        g = (255 - parseInt(hex.slice(2, 4), 16)).toString(16),
+        b = (255 - parseInt(hex.slice(4, 6), 16)).toString(16);
+    return '#' + r.padStart(2, '0') + g.padStart(2, '0') + b.padStart(2, '0');
+  }
+
+  function rgbToHsl(r, g, b) {
+    r /= 255, g /= 255, b /= 255;
+    let max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max == min) { h = s = 0; }
+    else {
+      let d = max - min; s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; case b: h = (r - g) / d + 4; break; } h /= 6;
+    }
+    return [h, s, l];
+  }
+
+  function renderPaint(time) {
+    ctx.clearRect(0, 0, canvasW, canvasH);
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const cell = grid[y][x];
+        if (cell) drawGlitchTool(ctx, x * 12, y * 12, cell, time);
+      }
     }
 
-    requestAnimationFrame(render);
-  </script>
+    paintPatterns.forEach(paintId => {
+      const c = document.getElementById(`icon-${paintId}`);
+      if (c) {
+        const btx = c.getContext('2d');
+        btx.clearRect(0, 0, 16, 16);
+        const dummyCell = { type: paintId, color: fgColor, offset: 0 };
+        drawGlitchTool(btx, 2, 2, dummyCell, time);
+      }
+    });
+  }
+
+
+  // ══════════ PIXELMOSH 95 ENGINE ══════════
+  let moshInitialized = false;
+  let moshCanvas, moshCtx;
+  let moshSourceCanvas, moshSourceCtx;
+  let moshOffCanvas, moshOffCtx;
+  let moshVideoEl;
+  let moshWebcamStream = null;
+  let moshIsPaused = false;
+  let moshMediaRecorder = null;
+  let moshRecordedChunks = [];
+  let moshSourceType = 'sample';
+  let moshSampleName = 'bars';
+
+  const ALL_FX_IDS = [
+    'badtv', 'jitter', 'glitch', 'melt', 'wobble', 'slices',
+    '8bit', 'halftone', 'vhs', 'luna', 'rgb', 'solar', 'barrel', 'edges'
+  ];
+
+  function initPixelMoshEngine() {
+    if (moshInitialized) return;
+    moshInitialized = true;
+
+    moshCanvas = document.getElementById('mosh-canvas');
+    moshCtx = moshCanvas.getContext('2d', { willReadFrequently: true });
+
+    moshSourceCanvas = document.createElement('canvas');
+    moshSourceCanvas.width = 800; moshSourceCanvas.height = 600;
+    moshSourceCtx = moshSourceCanvas.getContext('2d', { willReadFrequently: true });
+
+    moshOffCanvas = document.createElement('canvas');
+    moshOffCanvas.width = 800; moshOffCanvas.height = 600;
+    moshOffCtx = moshOffCanvas.getContext('2d', { willReadFrequently: true });
+
+    moshVideoEl = document.getElementById('mosh-video-source');
+
+    generateMoshSample('bars');
+    initMoshDragAndDrop();
+    initMoshSidebarDivider();
+    moshUpdateValuesDisplay();
+  }
+
+  function initMoshSidebarDivider() {
+    const divider = document.getElementById('mosh-sidebar-divider');
+    const sidebar = document.getElementById('mosh-sidebar');
+    if (!divider || !sidebar) return;
+
+    let isResizing = false;
+    divider.onpointerdown = (e) => {
+      e.preventDefault(); isResizing = true;
+      divider.classList.add('dragging'); divider.setPointerCapture(e.pointerId);
+    };
+    divider.onpointermove = (e) => {
+      if (!isResizing) return;
+      const sidebarLeft = sidebar.getBoundingClientRect().left;
+      sidebar.style.width = Math.max(180, Math.min(650, e.clientX - sidebarLeft)) + 'px';
+    };
+    divider.onpointerup = (e) => {
+      isResizing = false; divider.classList.remove('dragging');
+      try { divider.releasePointerCapture(e.pointerId); } catch(err){}
+    };
+  }
+
+  function initMoshDragAndDrop() {
+    const sidebar = document.getElementById('mosh-sidebar');
+    if (!sidebar) return;
+    let draggedCard = null;
+
+    sidebar.addEventListener('dragstart', (e) => {
+      const card = e.target.closest('.mosh-fx-card');
+      if (!card || !card.dataset.fxId) return;
+      draggedCard = card; card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    sidebar.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const targetCard = e.target.closest('.mosh-fx-card[data-fx-id]');
+      if (targetCard && targetCard !== draggedCard) {
+        document.querySelectorAll('.mosh-fx-card').forEach(c => c.classList.remove('drag-over'));
+        targetCard.classList.add('drag-over');
+      }
+    });
+
+    sidebar.addEventListener('drop', (e) => {
+      e.preventDefault();
+      document.querySelectorAll('.mosh-fx-card').forEach(c => c.classList.remove('drag-over'));
+      const targetCard = e.target.closest('.mosh-fx-card[data-fx-id]');
+      if (targetCard && draggedCard && targetCard !== draggedCard) {
+        const rect = targetCard.getBoundingClientRect();
+        const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+        targetCard.parentNode.insertBefore(draggedCard, next ? targetCard.nextSibling : targetCard);
+        moshUpdate();
+      }
+    });
+
+    sidebar.addEventListener('dragend', () => {
+      if (draggedCard) draggedCard.classList.remove('dragging');
+      document.querySelectorAll('.mosh-fx-card').forEach(c => c.classList.remove('drag-over'));
+      draggedCard = null;
+    });
+  }
+
+  function moshUpdateValuesDisplay() {
+    let activeCount = 0;
+    ALL_FX_IDS.forEach(id => {
+      const chk = document.getElementById('fx-' + id + '-on');
+      if (chk) {
+        const card = chk.closest('.mosh-fx-card');
+        if (chk.checked) { activeCount++; if (card) card.classList.add('active-card'); }
+        else { if (card) card.classList.remove('active-card'); }
+      }
+    });
+    const statusEl = document.getElementById('mosh-status-fx');
+    if (statusEl) statusEl.textContent = `Active FX: ${activeCount} / 14`;
+  }
+
+  function moshUpdate() { moshUpdateValuesDisplay(); }
+
+  function generateMoshSample(type, time = 0) {
+    const w = moshSourceCanvas.width, h = moshSourceCanvas.height;
+    const ctx = moshSourceCtx;
+    moshSampleName = type;
+
+    if (type === 'bars') {
+      const colors = ['#c0c0c0', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0', '#000000'];
+      const bw = w / colors.length;
+      colors.forEach((col, i) => { ctx.fillStyle = col; ctx.fillRect(i * bw, 0, bw, h * 0.75); });
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px monospace';
+      ctx.fillText("PIXELMOSH 95 PRO", 40, 60);
+    }
+  }
+
+  function loadMoshSample(name) {
+    moshSourceType = 'sample'; generateMoshSample(name);
+    document.getElementById('mosh-status-msg').textContent = `Loaded Sample: ${name.toUpperCase()}`;
+  }
+
+  function handleMoshFileUpload(e) {
+    const file = e.target.files[0]; if (!file) return;
+    if (file.type.startsWith('image/')) {
+      const img = new Image();
+      img.onload = () => {
+        moshSourceType = 'image';
+        moshCanvas.width = img.width; moshCanvas.height = img.height;
+        moshSourceCanvas.width = img.width; moshSourceCanvas.height = img.height;
+        moshOffCanvas.width = img.width; moshOffCanvas.height = img.height;
+        moshSourceCtx.drawImage(img, 0, 0);
+        document.getElementById('mosh-status-res').textContent = `${img.width} x ${img.height}`;
+      };
+      img.src = URL.createObjectURL(file);
+    }
+  }
+
+  async function toggleMoshWebcam() {
+    const btn = document.getElementById('mosh-webcam-btn');
+    if (moshWebcamStream) {
+      moshWebcamStream.getTracks().forEach(t => t.stop()); moshWebcamStream = null;
+      btn.textContent = '📷 Webcam'; loadMoshSample('bars');
+    } else {
+      try {
+        moshWebcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        moshVideoEl.srcObject = moshWebcamStream; moshVideoEl.play();
+        moshSourceType = 'webcam'; btn.textContent = '🛑 Stop Cam';
+      } catch (err) { alert('Webcam error: ' + err.message); }
+    }
+  }
+
+  function toggleMoshPause() {
+    moshIsPaused = !moshIsPaused;
+    document.getElementById('mosh-play-btn').textContent = moshIsPaused ? '▶️ Resume' : '⏯️ Pause';
+  }
+
+  function moshToggleAllFX(enable) {
+    ALL_FX_IDS.forEach(id => { const el = document.getElementById('fx-' + id + '-on'); if (el) el.checked = enable; });
+    moshUpdate();
+  }
+
+  function moshResetAll() { moshToggleAllFX(false); moshUpdate(); }
+
+  function moshRandomize() {
+    ALL_FX_IDS.forEach(id => {
+      const el = document.getElementById('fx-' + id + '-on');
+      if (el) el.checked = Math.random() < 0.35;
+    });
+
+    const setRand = (id, min, max) => {
+      const el = document.getElementById(id);
+      if (el) el.value = Math.floor(Math.random() * (max - min + 1)) + min;
+    };
+
+    setRand('fx-badtv-track', 10, 70);
+    setRand('fx-badtv-noise', 10, 50);
+    setRand('fx-badtv-roll', 5, 30);
+    setRand('fx-jitter-amt', 5, 35);
+    setRand('fx-jitter-speed', 20, 80);
+    setRand('fx-glitch-rate', 20, 80);
+    setRand('fx-glitch-block', 8, 48);
+    setRand('fx-melt-len', 5, 45);
+    setRand('fx-wobble-speed', 20, 80);
+    setRand('fx-wobble-amp', 5, 30);
+    setRand('fx-slices-count', 6, 40);
+    setRand('fx-slices-offset', 10, 50);
+    setRand('fx-8bit-res', 2, 16);
+    setRand('fx-half-scale', 3, 15);
+    setRand('fx-vhs-grain', 10, 70);
+    setRand('fx-vhs-bleed', 5, 30);
+    setRand('fx-luna-scale', 10, 40);
+    setRand('fx-rgb-amount', 5, 35);
+    setRand('fx-rgb-angle', 0, 360);
+    setRand('fx-solar-thresh', 20, 80);
+    setRand('fx-solar-levels', 2, 8);
+    setRand('fx-barrel-rad', 3, 20);
+    setRand('fx-edges-sens', 20, 80);
+
+    const sidebar = document.getElementById('mosh-sidebar');
+    if (sidebar) {
+      const cards = Array.from(sidebar.querySelectorAll('.mosh-fx-card[data-fx-id]'));
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        sidebar.appendChild(cards[j]);
+      }
+    }
+
+    moshUpdate();
+    const statusMsg = document.getElementById('mosh-status-msg');
+    if (statusMsg) statusMsg.textContent = '🎲 Randomize: Shuffled effects, parameters, and order!';
+  }
+
+  function applyMoshPreset(preset) { moshToggleAllFX(false); moshUpdate(); }
+
+  function moshMainRenderStep(time) {
+    const w = moshCanvas.width, h = moshCanvas.height;
+    if (moshSourceType === 'video' || moshSourceType === 'webcam') {
+      if (moshVideoEl.readyState >= 2) {
+        moshSourceCtx.drawImage(moshVideoEl, 0, 0, w, h);
+      }
+    }
+    moshOffCtx.drawImage(moshSourceCanvas, 0, 0, w, h);
+    moshApplyFXPipeline(moshOffCtx, w, h, time);
+    moshCtx.drawImage(moshOffCanvas, 0, 0, w, h);
+  }
+
+  function moshApplyFXPipeline(ctx, w, h, time) {
+    document.querySelectorAll('.mosh-fx-card[data-fx-id]').forEach(card => {
+      const fxId = card.dataset.fxId;
+      const chk = document.getElementById('fx-' + fxId + '-on');
+      if (chk && chk.checked) moshExecuteEffect(fxId, ctx, w, h, time);
+    });
+  }
+
+  // ── FULL PIXELMOSH EFFECT ENGINE (IN-BOUNDS SAFE) ──
+  function moshExecuteEffect(fxId, ctx, w, h, time) {
+    switch (fxId) {
+      case 'badtv':
+        {
+          const track = parseFloat(document.getElementById('fx-badtv-track').value);
+          const noise = parseFloat(document.getElementById('fx-badtv-noise').value) / 100;
+          const roll = parseFloat(document.getElementById('fx-badtv-roll').value);
+          if (track > 0) {
+            let rollY = Math.floor((time / 15) % h);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; ctx.fillRect(0, rollY, w, track);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; ctx.fillRect(0, rollY + track, w, 6);
+          }
+          if (roll > 0 && Math.sin(time / 200) > 0.6) {
+            let shiftY = Math.floor(Math.sin(time / 50) * roll);
+            ctx.drawImage(ctx.canvas, 0, 0, w, h, 0, shiftY, w, h);
+          }
+          if (noise > 0 && Math.random() < 0.7) {
+            ctx.fillStyle = '#ffffff';
+            for (let i = 0; i < noise * 250; i++) {
+              ctx.fillRect(Math.floor(Math.random() * w), Math.floor(Math.random() * h), Math.random() * 4 + 1, 1);
+            }
+          }
+        }
+        break;
+
+      case 'jitter':
+        {
+          const amt = parseFloat(document.getElementById('fx-jitter-amt').value);
+          const speed = parseFloat(document.getElementById('fx-jitter-speed').value) / 50;
+          if (amt > 0) {
+            let jx = Math.round((Math.random() - 0.5) * amt * Math.sin(time * speed));
+            let jy = Math.round((Math.random() - 0.5) * amt * Math.cos(time * speed));
+            let tempCanvas = document.createElement('canvas');
+            tempCanvas.width = w; tempCanvas.height = h;
+            let tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(ctx.canvas, 0, 0);
+            ctx.drawImage(tempCanvas, jx, jy);
+          }
+        }
+        break;
+
+      case 'glitch':
+        {
+          const mode = document.getElementById('fx-glitch-mode').value;
+          const rate = parseFloat(document.getElementById('fx-glitch-rate').value) / 100;
+          const block = Math.max(4, parseInt(document.getElementById('fx-glitch-block').value));
+          if (mode === 'hard') {
+            if (Math.random() < rate) {
+              for (let i = 0; i < 5; i++) {
+                let rx = Math.floor(Math.random() * Math.max(1, w - block));
+                let ry = Math.floor(Math.random() * Math.max(1, h - block));
+                let rw = Math.floor(Math.random() * block * 3) + 8;
+                let rh = Math.floor(Math.random() * block) + 4;
+                let dx = Math.max(0, Math.min(w - rw, rx + Math.floor((Math.random() - 0.5) * 40)));
+                ctx.drawImage(ctx.canvas, rx, ry, rw, rh, dx, ry, rw, rh);
+              }
+            }
+          } else {
+            if (Math.random() < rate * 0.8) {
+              let sliceY = Math.floor(Math.random() * Math.max(1, h - block));
+              let shiftX = Math.floor((Math.random() - 0.5) * 60);
+              ctx.drawImage(ctx.canvas, 0, sliceY, w, block, shiftX, sliceY, w, block);
+            }
+          }
+        }
+        break;
+
+      case 'melt':
+        {
+          const dir = document.getElementById('fx-melt-dir').value;
+          const len = parseInt(document.getElementById('fx-melt-len').value);
+          const visc = parseFloat(document.getElementById('fx-melt-visc').value) / 100;
+          const imgData = ctx.getImageData(0, 0, w, h);
+          const data = imgData.data;
+          if (dir === 'down') {
+            for (let y = len; y < h; y += 2) {
+              for (let x = 0; x < w; x += 2) {
+                let idx = (y * w + x) * 4;
+                let sourceY = Math.max(0, y - Math.floor(Math.random() * len));
+                let upIdx = (sourceY * w + x) * 4;
+                if (Math.random() < visc && data[upIdx + 3] > 0) {
+                  data[idx] = data[upIdx]; data[idx+1] = data[upIdx+1]; data[idx+2] = data[upIdx+2]; data[idx+3] = data[upIdx+3];
+                }
+              }
+            }
+          } else {
+            for (let y = 0; y < h; y += 2) {
+              for (let x = len; x < w; x += 2) {
+                let idx = (y * w + x) * 4;
+                let sourceX = Math.max(0, x - Math.floor(Math.random() * len));
+                let leftIdx = (y * w + sourceX) * 4;
+                if (Math.random() < visc && data[leftIdx + 3] > 0) {
+                  data[idx] = data[leftIdx]; data[idx+1] = data[leftIdx+1]; data[idx+2] = data[leftIdx+2]; data[idx+3] = data[leftIdx+3];
+                }
+              }
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+        }
+        break;
+
+      case 'wobble':
+        {
+          const speed = parseFloat(document.getElementById('fx-wobble-speed').value) / 200;
+          const amp = parseFloat(document.getElementById('fx-wobble-amp').value);
+          const freq = parseFloat(document.getElementById('fx-wobble-freq').value) / 100;
+          const copy = ctx.getImageData(0, 0, w, h);
+          for (let y = 0; y < h; y += 4) {
+            let offsetX = Math.sin(y * freq + time * speed) * amp;
+            ctx.putImageData(copy, offsetX, y, 0, y, w, 4);
+          }
+        }
+        break;
+
+      case 'slices':
+        {
+          const count = parseInt(document.getElementById('fx-slices-count').value);
+          const maxOffset = parseInt(document.getElementById('fx-slices-offset').value);
+          const dir = document.getElementById('fx-slices-dir').value;
+          if (dir === 'h') {
+            const sliceH = Math.floor(h / count);
+            for (let i = 0; i < count; i++) {
+              if (Math.sin(i * 3.5 + time / 150) > 0.1) {
+                let offset = Math.round((Math.sin(i * 7 + time / 100) * maxOffset));
+                let sy = i * sliceH;
+                ctx.drawImage(ctx.canvas, 0, sy, w, sliceH, offset, sy, w, sliceH);
+              }
+            }
+          } else {
+            const sliceW = Math.floor(w / count);
+            for (let i = 0; i < count; i++) {
+              if (Math.cos(i * 3.5 + time / 150) > 0.1) {
+                let offset = Math.round((Math.cos(i * 7 + time / 100) * maxOffset));
+                let sx = i * sliceW;
+                ctx.drawImage(ctx.canvas, sx, 0, sliceW, h, sx, offset, sliceW, h);
+              }
+            }
+          }
+        }
+        break;
+
+      case '8bit':
+        {
+          const res = parseInt(document.getElementById('fx-8bit-res').value);
+          const palette = document.getElementById('fx-8bit-palette').value;
+          if (res > 1) {
+            let sw = Math.max(1, Math.floor(w / res));
+            let sh = Math.max(1, Math.floor(h / res));
+            let smallCanvas = document.createElement('canvas');
+            smallCanvas.width = sw; smallCanvas.height = sh;
+            let sCtx = smallCanvas.getContext('2d');
+            sCtx.imageSmoothingEnabled = false;
+            sCtx.drawImage(ctx.canvas, 0, 0, sw, sh);
+            if (palette === 'gameboy') {
+              let imgData = sCtx.getImageData(0, 0, sw, sh);
+              let d = imgData.data;
+              for (let i = 0; i < d.length; i += 4) {
+                let lum = (d[i] + d[i+1] + d[i+2]) / 3;
+                if (lum < 64) { d[i]=15; d[i+1]=56; d[i+2]=15; }
+                else if (lum < 128) { d[i]=48; d[i+1]=98; d[i+2]=48; }
+                else if (lum < 192) { d[i]=139; d[i+1]=172; d[i+2]=15; }
+                else { d[i]=155; d[i+1]=188; d[i+2]=15; }
+              }
+              sCtx.putImageData(imgData, 0, 0);
+            }
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(smallCanvas, 0, 0, sw, sh, 0, 0, w, h);
+          }
+        }
+        break;
+
+      case 'halftone':
+        {
+          const style = document.getElementById('fx-half-style').value;
+          const scale = parseInt(document.getElementById('fx-half-scale').value);
+          const imgData = ctx.getImageData(0, 0, w, h);
+          const data = imgData.data;
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+          for (let y = 0; y < h; y += scale) {
+            for (let x = 0; x < w; x += scale) {
+              let idx = (y * w + x) * 4;
+              let lum = (data[idx] + data[idx+1] + data[idx+2]) / 3;
+              if (style === 'dot') {
+                let rad = (1 - (lum / 255)) * (scale / 2);
+                if (rad > 0.5) {
+                  ctx.fillStyle = '#000000';
+                  ctx.beginPath(); ctx.arc(x + scale/2, y + scale/2, rad, 0, Math.PI * 2); ctx.fill();
+                }
+              } else {
+                ctx.fillStyle = lum < 128 ? '#000000' : '#ffffff';
+                ctx.fillRect(x, y, scale, lum < 128 ? scale * 0.8 : scale * 0.2);
+              }
+            }
+          }
+        }
+        break;
+
+      case 'vhs':
+        {
+          const grain = parseFloat(document.getElementById('fx-vhs-grain').value) / 100;
+          const bleed = parseFloat(document.getElementById('fx-vhs-bleed').value);
+          if (bleed > 0) {
+            ctx.globalAlpha = 0.3; ctx.drawImage(ctx.canvas, bleed, 0, w, h); ctx.globalAlpha = 1.0;
+          }
+          if (grain > 0 && Math.random() < 0.6) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+            for (let i = 0; i < grain * 300; i++) {
+              ctx.fillRect(Math.floor(Math.random() * w), Math.floor(Math.random() * h), Math.random() * 3 + 1, Math.random() * 3 + 1);
+            }
+          }
+        }
+        break;
+
+      case 'luna':
+        {
+          const mode = document.getElementById('fx-luna-mode').value;
+          const scale = parseInt(document.getElementById('fx-luna-scale').value);
+          if (mode === 'mesh') {
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.25)'; ctx.lineWidth = 1;
+            for (let x = 0; x < w; x += scale) {
+              ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + Math.sin(time / 500 + x) * 20, h); ctx.stroke();
+            }
+          } else {
+            let grad = ctx.createLinearGradient(0, 0, w, h);
+            grad.addColorStop(0, 'rgba(255, 0, 0, 0.2)');
+            grad.addColorStop(0.5, 'rgba(0, 255, 0, 0.2)');
+            grad.addColorStop(1, 'rgba(0, 0, 255, 0.2)');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+          }
+        }
+        break;
+
+      case 'rgb':
+        {
+          const amount = parseFloat(document.getElementById('fx-rgb-amount').value);
+          const angle = parseFloat(document.getElementById('fx-rgb-angle').value) * (Math.PI / 180);
+          let dx = Math.round(Math.cos(angle) * amount);
+          let dy = Math.round(Math.sin(angle) * amount);
+          const imgData = ctx.getImageData(0, 0, w, h);
+          const data = imgData.data;
+          const copy = new Uint8ClampedArray(data);
+          for (let y = 0; y < h; y += 2) {
+            for (let x = 0; x < w; x += 2) {
+              let rX = Math.max(0, Math.min(w - 1, x + dx));
+              let rY = Math.max(0, Math.min(h - 1, y + dy));
+              let bX = Math.max(0, Math.min(w - 1, x - dx));
+              let bY = Math.max(0, Math.min(h - 1, y - dy));
+              let dstIdx = (y * w + x) * 4;
+              let rIdx = (rY * w + rX) * 4;
+              let bIdx = (bY * w + bX) * 4;
+              data[dstIdx] = copy[rIdx];
+              data[dstIdx+2] = copy[bIdx+2];
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+        }
+        break;
+
+      case 'solar':
+        {
+          const thresh = parseFloat(document.getElementById('fx-solar-thresh').value) / 100 * 255;
+          const levels = parseInt(document.getElementById('fx-solar-levels').value);
+          const imgData = ctx.getImageData(0, 0, w, h);
+          const data = imgData.data;
+          const step = 255 / (levels - 1);
+          for (let i = 0; i < data.length; i += 4) {
+            for (let c = 0; c < 3; c++) {
+              let val = data[i+c];
+              if (val > thresh) val = 255 - val;
+              data[i+c] = Math.floor(val / step) * step;
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+        }
+        break;
+
+      case 'barrel':
+        {
+          const rad = parseInt(document.getElementById('fx-barrel-rad').value);
+          ctx.filter = `blur(${rad}px)`; ctx.drawImage(ctx.canvas, 0, 0); ctx.filter = 'none';
+        }
+        break;
+
+      case 'edges':
+        {
+          const sens = parseFloat(document.getElementById('fx-edges-sens').value) / 100 * 255;
+          const imgData = ctx.getImageData(0, 0, w, h);
+          const data = imgData.data;
+          const copy = new Uint8ClampedArray(data);
+          for (let y = 1; y < h - 1; y += 2) {
+            for (let x = 1; x < w - 1; x += 2) {
+              let i = (y * w + x) * 4;
+              let right = (y * w + (x + 1)) * 4;
+              let down = ((y + 1) * w + x) * 4;
+              let edge = (Math.abs(copy[i] - copy[right]) + Math.abs(copy[i] - copy[down])) / 2;
+              if (edge > sens) {
+                data[i] = 0; data[i+1] = 255; data[i+2] = 255;
+              }
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+        }
+        break;
+    }
+  }
+
+  function moshExportImage() {
+    const a = document.createElement('a');
+    a.href = moshCanvas.toDataURL('image/png'); a.download = 'pixelmosh-95.png'; a.click();
+  }
+  function toggleMoshVideoRecord() {}
+  async function moshExportGIF() {}
+
+
+  // ══════════ PIXELSORT 95 ENGINE ══════════
+  let sortInitialized = false;
+  let sortCanvas, sortCtx;
+  let sortSourceCanvas, sortSourceCtx;
+  let sortVideoEl;
+  let sortWebcamStream = null;
+  let sortSourceType = 'sample';
+  let sortSampleName = 'bars';
+  let sortCenterX = 400, sortCenterY = 300;
+
+  function initPixelSortEngine() {
+    if (sortInitialized) return;
+    sortInitialized = true;
+
+    sortCanvas = document.getElementById('sort-canvas');
+    sortCtx = sortCanvas.getContext('2d', { willReadFrequently: true });
+
+    sortSourceCanvas = document.createElement('canvas');
+    sortSourceCanvas.width = 800; sortSourceCanvas.height = 600;
+    sortSourceCtx = sortSourceCanvas.getContext('2d', { willReadFrequently: true });
+
+    sortVideoEl = document.getElementById('sort-video-source');
+
+    initSortSidebarDivider();
+    initSortCanvasClick();
+    loadSortSample('bars');
+    updateSortUI();
+  }
+
+  function sortMainRenderStep(time) {
+    if (sortSourceType === 'video' || sortSourceType === 'webcam' || document.getElementById('sort-realtime-chk').checked) {
+      performPixelSort();
+    }
+  }
+
+  function initSortSidebarDivider() {
+    const divider = document.getElementById('sort-sidebar-divider');
+    const sidebar = document.getElementById('sort-sidebar');
+    if (!divider || !sidebar) return;
+
+    let isResizing = false;
+    divider.onpointerdown = (e) => {
+      e.preventDefault(); isResizing = true;
+      divider.classList.add('dragging'); divider.setPointerCapture(e.pointerId);
+    };
+    divider.onpointermove = (e) => {
+      if (!isResizing) return;
+      const sidebarLeft = sidebar.getBoundingClientRect().left;
+      sidebar.style.width = Math.max(180, Math.min(650, e.clientX - sidebarLeft)) + 'px';
+    };
+    divider.onpointerup = (e) => {
+      isResizing = false; divider.classList.remove('dragging');
+      try { divider.releasePointerCapture(e.pointerId); } catch(err){}
+    };
+  }
+
+  function initSortCanvasClick() {
+    sortCanvas.addEventListener('pointerdown', (e) => {
+      const dir = document.getElementById('sort-dir-select').value;
+      if (dir === 'circular' || dir === 'radial') {
+        const rect = sortCanvas.getBoundingClientRect();
+        sortCenterX = Math.round((e.clientX - rect.left) * (sortCanvas.width / rect.width));
+        sortCenterY = Math.round((e.clientY - rect.top) * (sortCanvas.height / rect.height));
+        document.getElementById('sort-cx-slider').value = sortCenterX;
+        document.getElementById('sort-cy-slider').value = sortCenterY;
+        performPixelSort();
+      }
+    });
+  }
+
+  function generateSortSample(type) {
+    const w = sortSourceCanvas.width, h = sortSourceCanvas.height;
+    const ctx = sortSourceCtx;
+    sortSampleName = type;
+
+    if (type === 'bars') {
+      const colors = ['#c0c0c0', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0', '#000000'];
+      const bw = w / colors.length;
+      colors.forEach((col, i) => { ctx.fillStyle = col; ctx.fillRect(i * bw, 0, bw, h * 0.65); });
+      let rampGrad = ctx.createLinearGradient(0, h * 0.65, w, h * 0.65);
+      rampGrad.addColorStop(0, '#000000'); rampGrad.addColorStop(0.5, '#ff0055'); rampGrad.addColorStop(1.0, '#ffff00');
+      ctx.fillStyle = rampGrad; ctx.fillRect(0, h * 0.65, w, h * 0.15);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 26px monospace';
+      ctx.fillText("PIXELSORT 95 - SMPTE TEST", 40, 50);
+      sortCenterX = Math.round(w / 2); sortCenterY = Math.round(h / 2);
+    }
+  }
+
+  function loadSortSample(name) {
+    sortSourceType = 'sample'; generateSortSample(name); performPixelSort();
+  }
+
+  function handleSortFileUpload(e) {
+    const file = e.target.files[0]; if (!file) return;
+    if (file.type.startsWith('image/')) {
+      const img = new Image();
+      img.onload = () => {
+        sortSourceType = 'image';
+        sortCanvas.width = img.width; sortCanvas.height = img.height;
+        sortSourceCanvas.width = img.width; sortSourceCanvas.height = img.height;
+        sortSourceCtx.drawImage(img, 0, 0);
+        sortCenterX = Math.round(img.width / 2); sortCenterY = Math.round(img.height / 2);
+        performPixelSort();
+      };
+      img.src = URL.createObjectURL(file);
+    }
+  }
+
+  async function toggleSortWebcam() {}
+  function updateSortUI() { performPixelSort(); }
+  function sortRandomize() { updateSortUI(); }
+
+  function performPixelSort() {
+    if (!sortCtx) return;
+    const w = sortCanvas.width, h = sortCanvas.height;
+    const mode = document.getElementById('sort-mode-select').value;
+    const dir = document.getElementById('sort-dir-select').value;
+    const minThresh = parseInt(document.getElementById('sort-min-thresh').value);
+    const maxThresh = parseInt(document.getElementById('sort-max-thresh').value);
+    const reverse = document.getElementById('sort-reverse-chk').checked;
+
+    const srcData = sortSourceCtx.getImageData(0, 0, w, h);
+    const dstData = sortCtx.createImageData(w, h);
+    dstData.data.set(srcData.data);
+    const sD = srcData.data, dD = dstData.data;
+
+    const sortInterval = (pixelRecords, coords) => {
+      let inInt = false, sIdx = 0;
+      for (let i = 0; i < pixelRecords.length; i++) {
+        const v = pixelRecords[i].val;
+        const m = v >= minThresh && v <= maxThresh;
+        if (m && !inInt) { inInt = true; sIdx = i; }
+        else if ((!m || i === pixelRecords.length - 1) && inInt) {
+          const eIdx = m ? i : i - 1; inInt = false;
+          if (eIdx > sIdx) {
+            const sub = pixelRecords.slice(sIdx, eIdx + 1);
+            sub.sort((a, b) => reverse ? b.val - a.val : a.val - b.val);
+            for (let k = 0; k < sub.length; k++) {
+              const idx = coords[sIdx + k].idx;
+              dD[idx] = sub[k].r; dD[idx+1] = sub[k].g; dD[idx+2] = sub[k].b; dD[idx+3] = sub[k].a;
+            }
+          }
+        }
+      }
+    };
+
+    if (dir === 'circular') {
+      const innerR = parseInt(document.getElementById('sort-inner-r').value);
+      const outerR = parseInt(document.getElementById('sort-outer-r').value);
+      for (let r = innerR; r <= outerR; r++) {
+        const numSteps = Math.max(24, Math.floor(2 * Math.PI * r * 1.2));
+        const records = [], coords = [], seenIdx = new Set();
+        for (let i = 0; i < numSteps; i++) {
+          const theta = (i / numSteps) * Math.PI * 2;
+          const px = Math.round(sortCenterX + r * Math.cos(theta));
+          const py = Math.round(sortCenterY + r * Math.sin(theta));
+          if (px >= 0 && px < w && py >= 0 && py < h) {
+            const idx = (py * w + px) * 4;
+            if (!seenIdx.has(idx)) {
+              seenIdx.add(idx); coords.push({ idx });
+              let lum = 0.299 * sD[idx] + 0.587 * sD[idx+1] + 0.114 * sD[idx+2];
+              records.push({ r: sD[idx], g: sD[idx+1], b: sD[idx+2], a: sD[idx+3], val: lum });
+            }
+          }
+        }
+        if (records.length > 0) sortInterval(records, coords);
+      }
+    } else {
+      for (let y = 0; y < h; y++) {
+        const records = [], coords = [];
+        for (let x = 0; x < w; x++) {
+          const idx = (y * w + x) * 4; coords.push({ idx });
+          let lum = 0.299 * sD[idx] + 0.587 * sD[idx+1] + 0.114 * sD[idx+2];
+          records.push({ r: sD[idx], g: sD[idx+1], b: sD[idx+2], a: sD[idx+3], val: lum });
+        }
+        sortInterval(records, coords);
+      }
+    }
+    sortCtx.putImageData(dstData, 0, 0);
+  }
+
+  function sortExportImage() {}
+  function toggleSortVideoRecord() {}
+  async function sortExportGIF() {}
+
+
+  // ══════════ PIXELDEPTH 95 ENGINE ══════════
+  let depthInitialized = false;
+  let depthCanvas, depthCtx;
+  let depthSourceCanvas, depthSourceCtx;
+  let depthMapCanvas, depthMapCtx;
+  let depthCustomMapCanvas, depthCustomMapCtx;
+  let depthVideoEl;
+  let depthWebcamStream = null;
+  let depthSourceType = 'sample';
+  let depthSampleName = 'bars';
+  let depthHasCustomMap = false;
+
+  let depthMouseX = 0, depthMouseY = 0;
+  let depthParallaxX = 0, depthParallaxY = 0;
+
+  function initPixelDepthEngine() {
+    if (depthInitialized) return;
+    depthInitialized = true;
+
+    depthCanvas = document.getElementById('depth-canvas');
+    depthCtx = depthCanvas.getContext('2d', { willReadFrequently: true });
+
+    depthSourceCanvas = document.createElement('canvas');
+    depthSourceCanvas.width = 800; depthSourceCanvas.height = 600;
+    depthSourceCtx = depthSourceCanvas.getContext('2d', { willReadFrequently: true });
+
+    depthMapCanvas = document.createElement('canvas');
+    depthMapCanvas.width = 800; depthMapCanvas.height = 600;
+    depthMapCtx = depthMapCanvas.getContext('2d', { willReadFrequently: true });
+
+    depthCustomMapCanvas = document.createElement('canvas');
+    depthCustomMapCanvas.width = 800; depthCustomMapCanvas.height = 600;
+    depthCustomMapCtx = depthCustomMapCanvas.getContext('2d', { willReadFrequently: true });
+
+    depthVideoEl = document.getElementById('depth-video-source');
+
+    initDepthSidebarDivider();
+    initDepthMouseEvents();
+    loadDepthSample('bars');
+    updateDepthUI();
+  }
+
+  function initDepthSidebarDivider() {
+    const divider = document.getElementById('depth-sidebar-divider');
+    const sidebar = document.getElementById('depth-sidebar');
+    if (!divider || !sidebar) return;
+
+    let isResizing = false;
+    divider.onpointerdown = (e) => {
+      e.preventDefault(); isResizing = true;
+      divider.classList.add('dragging'); divider.setPointerCapture(e.pointerId);
+    };
+    divider.onpointermove = (e) => {
+      if (!isResizing) return;
+      const sidebarLeft = sidebar.getBoundingClientRect().left;
+      sidebar.style.width = Math.max(180, Math.min(650, e.clientX - sidebarLeft)) + 'px';
+    };
+    divider.onpointerup = (e) => {
+      isResizing = false; divider.classList.remove('dragging');
+      try { divider.releasePointerCapture(e.pointerId); } catch(err){}
+    };
+  }
+
+  function initDepthMouseEvents() {
+    const viewport = document.getElementById('depth-viewport-container');
+    viewport.addEventListener('pointermove', (e) => {
+      const rect = depthCanvas.getBoundingClientRect();
+      depthMouseX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+      depthMouseY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+    });
+  }
+
+  function generateDepthSample(type) {
+    const w = depthSourceCanvas.width, h = depthSourceCanvas.height;
+    const ctx = depthSourceCtx;
+    depthSampleName = type;
+
+    if (type === 'bars') {
+      const colors = ['#c0c0c0', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0', '#000000'];
+      const bw = w / colors.length;
+      colors.forEach((col, i) => { ctx.fillStyle = col; ctx.fillRect(i * bw, 0, bw, h * 0.65); });
+      let rampGrad = ctx.createLinearGradient(0, h * 0.65, w, h * 0.65);
+      rampGrad.addColorStop(0, '#000000'); rampGrad.addColorStop(0.5, '#ff00ff'); rampGrad.addColorStop(1.0, '#ffff00');
+      ctx.fillStyle = rampGrad; ctx.fillRect(0, h * 0.65, w, h * 0.15);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 26px monospace';
+      ctx.fillText("PIXELDEPTH 95 - 2.5D PARALLAX", 40, 50);
+    }
+  }
+
+  function loadDepthSample(name) {
+    depthSourceType = 'sample'; generateDepthSample(name); performPixelDepth();
+    document.getElementById('depth-status-msg').textContent = `Loaded Sample: ${name.toUpperCase()}`;
+  }
+
+  function handleDepthFileUpload(e) {
+    const file = e.target.files[0]; if (!file) return;
+    if (file.type.startsWith('image/')) {
+      const img = new Image();
+      img.onload = () => {
+        depthSourceType = 'image';
+        depthCanvas.width = img.width; depthCanvas.height = img.height;
+        depthSourceCanvas.width = img.width; depthSourceCanvas.height = img.height;
+        depthMapCanvas.width = img.width; depthMapCanvas.height = img.height;
+        depthSourceCtx.drawImage(img, 0, 0);
+        performPixelDepth();
+      };
+      img.src = URL.createObjectURL(file);
+    }
+  }
+
+  function handleCustomDepthMapUpload(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      depthHasCustomMap = true;
+      depthCustomMapCanvas.width = depthSourceCanvas.width;
+      depthCustomMapCanvas.height = depthSourceCanvas.height;
+      depthCustomMapCtx.drawImage(img, 0, 0, depthSourceCanvas.width, depthSourceCanvas.height);
+      document.getElementById('depth-calc-mode').value = 'custom';
+      performPixelDepth();
+    };
+    img.src = URL.createObjectURL(file);
+  }
+
+  async function toggleDepthWebcam() {}
+  function updateDepthUI() { performPixelDepth(); }
+  function depthRandomize() { updateDepthUI(); }
+
+  function depthMainRenderStep(time) {
+    const wiggleMode = document.getElementById('depth-wiggle-mode').value;
+    const speed = parseFloat(document.getElementById('depth-wiggle-speed').value) / 1000;
+    const amp = parseFloat(document.getElementById('depth-wiggle-amp').value) / 30;
+
+    if (wiggleMode === 'h_wiggle') {
+      depthParallaxX = Math.sin(time * speed) * amp; depthParallaxY = 0;
+    } else if (wiggleMode === 'v_wiggle') {
+      depthParallaxX = 0; depthParallaxY = Math.sin(time * speed) * amp;
+    } else if (wiggleMode === 'orbit') {
+      depthParallaxX = Math.cos(time * speed) * amp; depthParallaxY = Math.sin(time * speed) * amp;
+    } else if (wiggleMode === 'figure8') {
+      depthParallaxX = Math.sin(time * speed) * amp; depthParallaxY = Math.sin(time * speed * 2) * (amp * 0.6);
+    } else {
+      depthParallaxX = depthMouseX; depthParallaxY = depthMouseY;
+    }
+
+    performPixelDepth();
+  }
+
+  function performPixelDepth() {
+    if (!depthCtx) return;
+    const w = depthCanvas.width, h = depthCanvas.height;
+    const calcMode = document.getElementById('depth-calc-mode').value;
+    const ext = parseInt(document.getElementById('depth-ext-slider').value);
+    const focusPlane = parseInt(document.getElementById('depth-focus-slider').value);
+    const invertDepth = document.getElementById('depth-invert-chk').checked;
+    const viewMode = document.getElementById('depth-view-mode').value;
+
+    const srcImgData = depthSourceCtx.getImageData(0, 0, w, h);
+    const sD = srcImgData.data;
+    const mapImgData = depthMapCtx.createImageData(w, h);
+    const mD = mapImgData.data;
+
+    const cx = w / 2, cy = h / 2;
+    const maxDist = Math.sqrt(cx * cx + cy * cy);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let idx = (y * w + x) * 4;
+        let v = 0.299 * sD[idx] + 0.587 * sD[idx+1] + 0.114 * sD[idx+2];
+        if (calcMode === 'inv_lum') v = 255 - v;
+        if (invertDepth) v = 255 - v;
+        mD[idx] = v; mD[idx+1] = v; mD[idx+2] = v; mD[idx+3] = 255;
+      }
+    }
+    depthMapCtx.putImageData(mapImgData, 0, 0);
+
+    if (viewMode === 'depth_map') {
+      depthCtx.drawImage(depthMapCanvas, 0, 0);
+    } else {
+      const dstData = depthCtx.createImageData(w, h);
+      const dD = dstData.data;
+      const pX = depthParallaxX * ext;
+      const pY = depthParallaxY * ext;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let idx = (y * w + x) * 4;
+          let depthVal = (mD[idx] - focusPlane) / 255;
+          let srcX = Math.max(0, Math.min(w - 1, Math.round(x + depthVal * pX)));
+          let srcY = Math.max(0, Math.min(h - 1, Math.round(y + depthVal * pY)));
+          let sIdx = (srcY * w + srcX) * 4;
+          dD[idx] = sD[sIdx]; dD[idx+1] = sD[sIdx+1]; dD[idx+2] = sD[sIdx+2]; dD[idx+3] = sD[sIdx+3];
+        }
+      }
+      depthCtx.putImageData(dstData, 0, 0);
+    }
+  }
+
+  function depthExportImage() {}
+  function toggleDepthVideoRecord() {}
+  async function depthExportGIF() {}
+
+
+  // ══════════ UNIFIED MASTER RENDER LOOP & SLEEP OPTIMIZATION ══════════
+  function suiteMainRenderLoop(time) {
+    // 1. Paint Window - Render if open & not minimized
+    const paintWin = document.getElementById('paint-window');
+    if (paintWin && paintWin.style.display !== 'none') {
+      renderPaint(time);
+    }
+
+    // 2. PixelMosh Window - Render if open & not paused
+    const moshWin = document.getElementById('mosh-window');
+    if (moshWin && moshWin.style.display !== 'none' && !moshIsPaused) {
+      moshMainRenderStep(time);
+    }
+
+    // 3. PixelSort Window - Render if open
+    const sortWin = document.getElementById('sort-window');
+    if (sortWin && sortWin.style.display !== 'none') {
+      sortMainRenderStep(time);
+    }
+
+    // 4. PixelDepth Window - Render if open
+    const depthWin = document.getElementById('depth-window');
+    if (depthWin && depthWin.style.display !== 'none') {
+      depthMainRenderStep(time);
+    }
+
+    requestAnimationFrame(suiteMainRenderLoop);
+  }
+
+  // Start unified master loop
+  requestAnimationFrame(suiteMainRenderLoop);
+</script>
+
 </body>
-
 </html>
