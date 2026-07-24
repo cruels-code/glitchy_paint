@@ -1213,12 +1213,15 @@
     win.style.zIndex = ++maxZ;
     updateTaskbar();
 
-    if (winId === 'mosh-window' && !moshInitialized) {
-      initPixelMoshEngine();
-    } else if (winId === 'sort-window' && !sortInitialized) {
-      initPixelSortEngine();
-    } else if (winId === 'depth-window' && !depthInitialized) {
-      initPixelDepthEngine();
+    if (winId === 'mosh-window') {
+      if (!moshInitialized) initPixelMoshEngine();
+      else moshMainRenderStep(performance.now());
+    } else if (winId === 'sort-window') {
+      if (!sortInitialized) initPixelSortEngine();
+      else performPixelSort();
+    } else if (winId === 'depth-window') {
+      if (!depthInitialized) initPixelDepthEngine();
+      else performPixelDepth();
     }
   }
 
@@ -2206,6 +2209,7 @@
     initMoshDragAndDrop();
     initMoshSidebarDivider();
     moshUpdateValuesDisplay();
+    moshMainRenderStep(performance.now());
   }
 
   function initMoshSidebarDivider() {
@@ -2286,21 +2290,50 @@
   function moshUpdate() { moshUpdateValuesDisplay(); }
 
   function generateMoshSample(type, time = 0) {
+    if (!moshSourceCanvas || !moshSourceCtx) return;
     const w = moshSourceCanvas.width, h = moshSourceCanvas.height;
     const ctx = moshSourceCtx;
     moshSampleName = type;
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, w, h);
 
     if (type === 'bars') {
       const colors = ['#c0c0c0', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0', '#000000'];
       const bw = w / colors.length;
       colors.forEach((col, i) => { ctx.fillStyle = col; ctx.fillRect(i * bw, 0, bw, h * 0.75); });
-      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px monospace';
-      ctx.fillText("PIXELMOSH 95 PRO", 40, 60);
+      let grad = ctx.createLinearGradient(0, h * 0.75, w, h * 0.75);
+      grad.addColorStop(0, '#000000'); grad.addColorStop(0.5, '#ff00ff'); grad.addColorStop(1, '#ffffff');
+      ctx.fillStyle = grad; ctx.fillRect(0, h * 0.75, w, h * 0.25);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 32px monospace';
+      ctx.fillText("PIXELMOSH 95", 40, 60);
+    } else if (type === 'grid') {
+      let grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#0b001a'); grad.addColorStop(0.6, '#ff0055'); grad.addColorStop(1, '#ffaa00');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(w / 2, h * 0.55, 120, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.6)'; ctx.lineWidth = 2;
+      for (let x = 0; x <= w; x += 40) { ctx.beginPath(); ctx.moveTo(x, h * 0.6); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = h * 0.6; y <= h; y += 20) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    } else if (type === 'noise') {
+      const imgData = ctx.createImageData(w, h);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        let v = Math.floor(Math.random() * 255);
+        data[i] = v; data[i+1] = v; data[i+2] = v; data[i+3] = 255;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    } else if (type === 'gradient') {
+      let grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, '#ff0055'); grad.addColorStop(0.33, '#00e5ff');
+      grad.addColorStop(0.66, '#76ff03'); grad.addColorStop(1, '#ffff00');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
     }
   }
 
   function loadMoshSample(name) {
     moshSourceType = 'sample'; generateMoshSample(name);
+    moshMainRenderStep(performance.now());
     document.getElementById('mosh-status-msg').textContent = `Loaded Sample: ${name.toUpperCase()}`;
   }
 
@@ -2314,6 +2347,7 @@
         moshSourceCanvas.width = img.width; moshSourceCanvas.height = img.height;
         moshOffCanvas.width = img.width; moshOffCanvas.height = img.height;
         moshSourceCtx.drawImage(img, 0, 0);
+        moshMainRenderStep(performance.now());
         document.getElementById('mosh-status-res').textContent = `${img.width} x ${img.height}`;
       };
       img.src = URL.createObjectURL(file);
@@ -2391,6 +2425,7 @@
     }
 
     moshUpdate();
+    moshMainRenderStep(performance.now());
     const statusMsg = document.getElementById('mosh-status-msg');
     if (statusMsg) statusMsg.textContent = '🎲 Randomize: Shuffled effects, parameters, and order!';
   }
@@ -2398,14 +2433,19 @@
   function applyMoshPreset(preset) { moshToggleAllFX(false); moshUpdate(); }
 
   function moshMainRenderStep(time) {
+    if (!moshCanvas || !moshCtx) return;
     const w = moshCanvas.width, h = moshCanvas.height;
     if (moshSourceType === 'video' || moshSourceType === 'webcam') {
-      if (moshVideoEl.readyState >= 2) {
+      if (moshVideoEl && moshVideoEl.readyState >= 2) {
         moshSourceCtx.drawImage(moshVideoEl, 0, 0, w, h);
       }
     }
+    moshOffCtx.fillStyle = '#000000';
+    moshOffCtx.fillRect(0, 0, w, h);
     moshOffCtx.drawImage(moshSourceCanvas, 0, 0, w, h);
     moshApplyFXPipeline(moshOffCtx, w, h, time);
+    moshCtx.fillStyle = '#000000';
+    moshCtx.fillRect(0, 0, w, h);
     moshCtx.drawImage(moshOffCanvas, 0, 0, w, h);
   }
 
@@ -2807,6 +2847,8 @@
     const ctx = sortSourceCtx;
     sortSampleName = type;
 
+    ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, w, h);
+
     if (type === 'bars') {
       const colors = ['#c0c0c0', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0', '#000000'];
       const bw = w / colors.length;
@@ -2816,6 +2858,30 @@
       ctx.fillStyle = rampGrad; ctx.fillRect(0, h * 0.65, w, h * 0.15);
       ctx.fillStyle = '#ffffff'; ctx.font = 'bold 26px monospace';
       ctx.fillText("PIXELSORT 95 - SMPTE TEST", 40, 50);
+      sortCenterX = Math.round(w / 2); sortCenterY = Math.round(h / 2);
+    } else if (type === 'grid') {
+      let grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#0b001a'); grad.addColorStop(0.6, '#ff0055'); grad.addColorStop(1, '#ffaa00');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(w / 2, h * 0.55, 120, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.6)'; ctx.lineWidth = 2;
+      for (let x = 0; x <= w; x += 40) { ctx.beginPath(); ctx.moveTo(x, h * 0.6); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = h * 0.6; y <= h; y += 20) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      sortCenterX = Math.round(w / 2); sortCenterY = Math.round(h * 0.55);
+    } else if (type === 'gradient') {
+      let grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, '#ff0055'); grad.addColorStop(0.33, '#00e5ff');
+      grad.addColorStop(0.66, '#76ff03'); grad.addColorStop(1, '#ffff00');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+      sortCenterX = Math.round(w / 2); sortCenterY = Math.round(h / 2);
+    } else if (type === 'noise') {
+      const imgData = ctx.createImageData(w, h);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        let v = Math.floor(Math.random() * 255);
+        data[i] = v; data[i+1] = v; data[i+2] = v; data[i+3] = 255;
+      }
+      ctx.putImageData(imgData, 0, 0);
       sortCenterX = Math.round(w / 2); sortCenterY = Math.round(h / 2);
     }
   }
@@ -2841,8 +2907,81 @@
   }
 
   async function toggleSortWebcam() {}
-  function updateSortUI() { performPixelSort(); }
-  function sortRandomize() { updateSortUI(); }
+  function updateSortUI() {
+    const dir = document.getElementById('sort-dir-select').value;
+    const angleCont = document.getElementById('sort-angle-container');
+    const angleVal = document.getElementById('sort-angle-val');
+    const circPanel = document.getElementById('sort-circular-panel');
+
+    if (angleCont) {
+      if (dir === 'angle') {
+        angleCont.style.display = 'flex';
+        const angleDeg = document.getElementById('sort-angle').value;
+        if (angleVal) angleVal.textContent = `${angleDeg}°`;
+      } else {
+        angleCont.style.display = 'none';
+      }
+    }
+
+    if (circPanel) {
+      if (dir === 'circular' || dir === 'radial') {
+        circPanel.style.display = 'block';
+      } else {
+        circPanel.style.display = 'none';
+      }
+    }
+
+    const minEl = document.getElementById('sort-min-thresh');
+    const maxEl = document.getElementById('sort-max-thresh');
+    if (minEl) document.getElementById('sort-min-val').textContent = minEl.value;
+    if (maxEl) document.getElementById('sort-max-val').textContent = maxEl.value;
+    const inEl = document.getElementById('sort-inner-r');
+    const outEl = document.getElementById('sort-outer-r');
+    if (inEl) document.getElementById('sort-inner-r-val').textContent = `${inEl.value}px`;
+    if (outEl) document.getElementById('sort-outer-r-val').textContent = `${outEl.value}px`;
+    const cxEl = document.getElementById('sort-cx-slider');
+    const cyEl = document.getElementById('sort-cy-slider');
+    if (cxEl) { sortCenterX = parseInt(cxEl.value); document.getElementById('sort-cx-val').textContent = `${cxEl.value}px`; }
+    if (cyEl) { sortCenterY = parseInt(cyEl.value); document.getElementById('sort-cy-val').textContent = `${cyEl.value}px`; }
+
+    performPixelSort();
+  }
+
+  function sortRandomize() {
+    const modes = ['asdf_black', 'asdf_bright', 'asdf_hue', 'asdf_sat', 'asdf_rgb', 'asdf_red'];
+    const dirs = ['circular', 'h', 'v', 'angle', 'radial'];
+    document.getElementById('sort-mode-select').value = modes[Math.floor(Math.random() * modes.length)];
+    document.getElementById('sort-dir-select').value = dirs[Math.floor(Math.random() * dirs.length)];
+    document.getElementById('sort-min-thresh').value = Math.floor(Math.random() * 80);
+    document.getElementById('sort-max-thresh').value = Math.floor(Math.random() * 100) + 140;
+    document.getElementById('sort-angle').value = Math.floor(Math.random() * 360);
+    updateSortUI();
+  }
+
+  function getSortVal(r, g, b, mode) {
+    if (mode === 'asdf_black') return (r + g + b) / 3;
+    if (mode === 'asdf_bright') return 0.299 * r + 0.587 * g + 0.114 * b;
+    if (mode === 'asdf_red') return r;
+    if (mode === 'asdf_hue') {
+      let rN = r / 255, gN = g / 255, bN = b / 255;
+      let max = Math.max(rN, gN, bN), min = Math.min(rN, gN, bN);
+      let h = 0;
+      if (max === min) h = 0;
+      else if (max === rN) h = (gN - bN) / (max - min) + (gN < bN ? 6 : 0);
+      else if (max === gN) h = (bN - rN) / (max - min) + 2;
+      else if (max === bN) h = (rN - gN) / (max - min) + 4;
+      return (h / 6) * 255;
+    }
+    if (mode === 'asdf_sat') {
+      let rN = r / 255, gN = g / 255, bN = b / 255;
+      let max = Math.max(rN, gN, bN), min = Math.min(rN, gN, bN);
+      let l = (max + min) / 2;
+      if (max === min) return 0;
+      let d = max - min;
+      return (l > 0.5 ? d / (2 - max - min) : d / (max + min)) * 255;
+    }
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  }
 
   function performPixelSort() {
     if (!sortCtx) return;
@@ -2892,20 +3031,79 @@
             const idx = (py * w + px) * 4;
             if (!seenIdx.has(idx)) {
               seenIdx.add(idx); coords.push({ idx });
-              let lum = 0.299 * sD[idx] + 0.587 * sD[idx+1] + 0.114 * sD[idx+2];
-              records.push({ r: sD[idx], g: sD[idx+1], b: sD[idx+2], a: sD[idx+3], val: lum });
+              let val = getSortVal(sD[idx], sD[idx+1], sD[idx+2], mode);
+              records.push({ r: sD[idx], g: sD[idx+1], b: sD[idx+2], a: sD[idx+3], val });
+            }
+          }
+        }
+        if (records.length > 0) sortInterval(records, coords);
+      }
+    } else if (dir === 'v') {
+      for (let x = 0; x < w; x++) {
+        const records = [], coords = [];
+        for (let y = 0; y < h; y++) {
+          const idx = (y * w + x) * 4; coords.push({ idx });
+          let val = getSortVal(sD[idx], sD[idx+1], sD[idx+2], mode);
+          records.push({ r: sD[idx], g: sD[idx+1], b: sD[idx+2], a: sD[idx+3], val });
+        }
+        sortInterval(records, coords);
+      }
+    } else if (dir === 'angle') {
+      const angleDeg = parseFloat(document.getElementById('sort-angle').value);
+      const rad = (angleDeg * Math.PI) / 180;
+      const cosA = Math.cos(rad), sinA = Math.sin(rad);
+      const diag = Math.sqrt(w * w + h * h);
+      const step = 1;
+      const perpX = -sinA, perpY = cosA;
+
+      for (let offset = -diag; offset <= diag; offset += 2) {
+        const startX = w / 2 + perpX * offset;
+        const startY = h / 2 + perpY * offset;
+        const records = [], coords = [], seenIdx = new Set();
+
+        for (let t = -diag; t <= diag; t += step) {
+          const px = Math.round(startX + cosA * t);
+          const py = Math.round(startY + sinA * t);
+          if (px >= 0 && px < w && py >= 0 && py < h) {
+            const idx = (py * w + px) * 4;
+            if (!seenIdx.has(idx)) {
+              seenIdx.add(idx); coords.push({ idx });
+              let val = getSortVal(sD[idx], sD[idx+1], sD[idx+2], mode);
+              records.push({ r: sD[idx], g: sD[idx+1], b: sD[idx+2], a: sD[idx+3], val });
+            }
+          }
+        }
+        if (records.length > 0) sortInterval(records, coords);
+      }
+    } else if (dir === 'radial') {
+      const numRays = 360;
+      const maxR = Math.sqrt(w * w + h * h);
+      for (let i = 0; i < numRays; i++) {
+        const theta = (i / numRays) * Math.PI * 2;
+        const cosT = Math.cos(theta), sinT = Math.sin(theta);
+        const records = [], coords = [], seenIdx = new Set();
+        for (let r = 0; r <= maxR; r += 1) {
+          const px = Math.round(sortCenterX + r * cosT);
+          const py = Math.round(sortCenterY + r * sinT);
+          if (px >= 0 && px < w && py >= 0 && py < h) {
+            const idx = (py * w + px) * 4;
+            if (!seenIdx.has(idx)) {
+              seenIdx.add(idx); coords.push({ idx });
+              let val = getSortVal(sD[idx], sD[idx+1], sD[idx+2], mode);
+              records.push({ r: sD[idx], g: sD[idx+1], b: sD[idx+2], a: sD[idx+3], val });
             }
           }
         }
         if (records.length > 0) sortInterval(records, coords);
       }
     } else {
+      // Horizontal
       for (let y = 0; y < h; y++) {
         const records = [], coords = [];
         for (let x = 0; x < w; x++) {
           const idx = (y * w + x) * 4; coords.push({ idx });
-          let lum = 0.299 * sD[idx] + 0.587 * sD[idx+1] + 0.114 * sD[idx+2];
-          records.push({ r: sD[idx], g: sD[idx+1], b: sD[idx+2], a: sD[idx+3], val: lum });
+          let val = getSortVal(sD[idx], sD[idx+1], sD[idx+2], mode);
+          records.push({ r: sD[idx], g: sD[idx+1], b: sD[idx+2], a: sD[idx+3], val });
         }
         sortInterval(records, coords);
       }
