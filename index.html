@@ -3193,6 +3193,8 @@
     const ctx = depthSourceCtx;
     depthSampleName = type;
 
+    ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, w, h);
+
     if (type === 'bars') {
       const colors = ['#c0c0c0', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0', '#000000'];
       const bw = w / colors.length;
@@ -3202,6 +3204,25 @@
       ctx.fillStyle = rampGrad; ctx.fillRect(0, h * 0.65, w, h * 0.15);
       ctx.fillStyle = '#ffffff'; ctx.font = 'bold 26px monospace';
       ctx.fillText("PIXELDEPTH 95 - 2.5D PARALLAX", 40, 50);
+    } else if (type === 'grid') {
+      let grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#0b001a'); grad.addColorStop(0.6, '#ff0055'); grad.addColorStop(1, '#ffaa00');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(w / 2, h * 0.55, 120, 0, Math.PI * 2); ctx.fill();
+    } else if (type === 'mountain') {
+      let skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+      skyGrad.addColorStop(0, '#020215'); skyGrad.addColorStop(1, '#ff3366');
+      ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(100, h); ctx.lineTo(w / 2, 150); ctx.lineTo(w - 100, h); ctx.fill();
+      ctx.fillStyle = '#777799'; ctx.beginPath(); ctx.moveTo(0, h); ctx.lineTo(250, 250); ctx.lineTo(500, h); ctx.fill();
+    } else if (type === 'noise') {
+      const imgData = ctx.createImageData(w, h);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        let v = Math.floor(Math.random() * 255);
+        data[i] = v; data[i+1] = v; data[i+2] = v; data[i+3] = 255;
+      }
+      ctx.putImageData(imgData, 0, 0);
     }
   }
 
@@ -3280,11 +3301,24 @@
 
     const cx = w / 2, cy = h / 2;
     const maxDist = Math.sqrt(cx * cx + cy * cy);
+
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         let idx = (y * w + x) * 4;
         let v = 0.299 * sD[idx] + 0.587 * sD[idx+1] + 0.114 * sD[idx+2];
         if (calcMode === 'inv_lum') v = 255 - v;
+        else if (calcMode === 'radial') {
+          let dist = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+          v = Math.max(0, 255 - (dist / maxDist) * 255);
+        } else if (calcMode === 'vert') {
+          v = (y / h) * 255;
+        } else if (calcMode === 'red') {
+          v = sD[idx];
+        } else if (calcMode === 'custom' && depthHasCustomMap) {
+          let cData = depthCustomMapCtx.getImageData(0, 0, w, h).data;
+          v = (cData[idx] + cData[idx+1] + cData[idx+2]) / 3;
+        }
+
         if (invertDepth) v = 255 - v;
         mD[idx] = v; mD[idx+1] = v; mD[idx+2] = v; mD[idx+3] = 255;
       }
@@ -3293,6 +3327,88 @@
 
     if (viewMode === 'depth_map') {
       depthCtx.drawImage(depthMapCanvas, 0, 0);
+    } else if (viewMode === 'split') {
+      depthCtx.drawImage(depthSourceCanvas, 0, 0, w / 2, h, 0, 0, w / 2, h);
+      depthCtx.drawImage(depthMapCanvas, w / 2, 0, w / 2, h, w / 2, 0, w / 2, h);
+      depthCtx.strokeStyle = '#000080'; depthCtx.lineWidth = 2;
+      depthCtx.beginPath(); depthCtx.moveTo(w / 2, 0); depthCtx.lineTo(w / 2, h); depthCtx.stroke();
+    } else if (viewMode === 'anaglyph') {
+      const dstData = depthCtx.createImageData(w, h);
+      const dD = dstData.data;
+      const pX = ext * 0.4;
+      for (let y = 0; y < h; y += 2) {
+        for (let x = 0; x < w; x += 2) {
+          let idx = (y * w + x) * 4;
+          let depthVal = (mD[idx] - focusPlane) / 255;
+          let leftX = Math.max(0, Math.min(w - 1, Math.round(x - depthVal * pX)));
+          let rightX = Math.max(0, Math.min(w - 1, Math.round(x + depthVal * pX)));
+          let lIdx = (y * w + leftX) * 4;
+          let rIdx = (y * w + rightX) * 4;
+          dD[idx] = sD[lIdx];       // Red channel from Left Eye
+          dD[idx+1] = sD[rIdx+1];   // Green channel from Right Eye
+          dD[idx+2] = sD[rIdx+2];   // Blue channel from Right Eye
+          dD[idx+3] = 255;
+        }
+      }
+      depthCtx.putImageData(dstData, 0, 0);
+    } else if (viewMode === 'wireframe') {
+      // 3D Perspective Heightmap Wireframe Renderer
+      depthCtx.fillStyle = '#0a0a14';
+      depthCtx.fillRect(0, 0, w, h);
+
+      const step = 16;
+      const cols = Math.floor(w / step);
+      const rows = Math.floor(h / step);
+      const rotY = depthParallaxX * 0.6;
+      const rotX = depthParallaxY * 0.4 + 0.45;
+
+      const project3D = (gx, gy, zVal) => {
+        let cx = (gx - cols / 2) * step;
+        let cy = (gy - rows / 2) * step;
+        let cz = (zVal - focusPlane) * (ext / 120);
+
+        let rx = cx * Math.cos(rotY) - cz * Math.sin(rotY);
+        let rz = cx * Math.sin(rotY) + cz * Math.cos(rotY);
+
+        let ry = cy * Math.cos(rotX) - rz * Math.sin(rotX);
+        let finalZ = cy * Math.sin(rotX) + rz * Math.cos(rotX);
+
+        let fov = 500;
+        let scale = fov / (fov + finalZ + 300);
+        let projX = w / 2 + rx * scale;
+        let projY = h / 2 + ry * scale;
+        return { x: projX, y: projY, z: finalZ, zVal };
+      };
+
+      const nodes = [];
+      for (let r = 0; r <= rows; r++) {
+        nodes[r] = [];
+        for (let c = 0; c <= cols; c++) {
+          let px = Math.min(w - 1, c * step);
+          let py = Math.min(h - 1, r * step);
+          let idx = (py * w + px) * 4;
+          let zVal = mD[idx];
+          nodes[r][c] = project3D(c, r, zVal);
+        }
+      }
+
+      depthCtx.lineWidth = 1;
+      for (let r = 0; r <= rows; r++) {
+        for (let c = 0; c <= cols; c++) {
+          const pt = nodes[r][c];
+          let colorHue = Math.floor((pt.zVal / 255) * 180 + 140);
+          depthCtx.strokeStyle = `hsl(${colorHue}, 100%, 65%)`;
+
+          if (c < cols) {
+            const nextH = nodes[r][c + 1];
+            depthCtx.beginPath(); depthCtx.moveTo(pt.x, pt.y); depthCtx.lineTo(nextH.x, nextH.y); depthCtx.stroke();
+          }
+          if (r < rows) {
+            const nextV = nodes[r + 1][c];
+            depthCtx.beginPath(); depthCtx.moveTo(pt.x, pt.y); depthCtx.lineTo(nextV.x, nextV.y); depthCtx.stroke();
+          }
+        }
+      }
     } else {
       const dstData = depthCtx.createImageData(w, h);
       const dD = dstData.data;
