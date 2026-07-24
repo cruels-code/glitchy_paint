@@ -3,9 +3,86 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Win95 Glitch Suite - Paint, Mosh, Sort & Depth</title>
+  <title>Win95 Suite - PixelPaint, PixelMosh, PixelSort, PixelDepth & PixelMotion</title>
   <link rel="stylesheet" href="https://unpkg.com/98.css" />
   <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.min.js"></script>
+
+  <!-- WebGL Shaders for PixelMotion 95 -->
+  <script id="vertex-shader" type="x-shader/x-vertex">
+      attribute vec2 a_position;
+      varying vec2 v_texCoord;
+      void main() {
+          vec2 texCoord = a_position * 0.5 + 0.5;
+          v_texCoord = vec2(texCoord.x, 1.0 - texCoord.y);
+          gl_Position = vec4(a_position, 0.0, 1.0);
+      }
+  </script>
+
+  <script id="fragment-shader" type="x-shader/x-fragment">
+      precision mediump float;
+      uniform sampler2D u_video1;
+      uniform sampler2D u_video2;
+      uniform vec2 u_resolution;
+      uniform bool u_edges;
+      uniform bool u_glow;
+      uniform float u_glowAmount;
+
+      varying vec2 v_texCoord;
+
+      vec4 getDifference(vec2 texCoord) {
+          vec4 color1 = texture2D(u_video1, texCoord);
+          vec4 color2 = texture2D(u_video2, texCoord);
+          vec3 difference = abs(color1.rgb - color2.rgb);
+          vec3 boosted = min(vec3(1.0), difference * 3.5);
+          return vec4(boosted, 1.0);
+      }
+
+      vec4 getEdges(vec2 texCoord) {
+          float pixelX = 1.0 / u_resolution.x;
+          float pixelY = 1.0 / u_resolution.y;
+          
+          mat3 sobelX = mat3(-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0);
+          mat3 sobelY = mat3(-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0);
+          
+          float gradX = 0.0;
+          float gradY = 0.0;
+
+          for (int i = -1; i <= 1; i++) {
+              for (int j = -1; j <= 1; j++) {
+                  vec2 offset = texCoord + vec2(float(i) * pixelX, float(j) * pixelY);
+                  vec4 sample = getDifference(offset);
+                  float gray = dot(sample.rgb, vec3(0.299, 0.587, 0.114));
+                  gradX += gray * sobelX[i+1][j+1];
+                  gradY += gray * sobelY[i+1][j+1];
+              }
+          }
+          
+          float magnitude = sqrt(gradX * gradX + gradY * gradY);
+          return vec4(vec3(magnitude), 1.0);
+      }
+
+      void main() {
+          vec4 motionColor = u_edges ? getEdges(v_texCoord) : getDifference(v_texCoord);
+          
+          if (u_glow && u_glowAmount > 0.0) {
+              vec4 totalGlow = vec4(0.0);
+              float blurSizeX = u_glowAmount / u_resolution.x;
+              float blurSizeY = u_glowAmount / u_resolution.y;
+
+              for (int x = -4; x <= 4; x++) {
+                  for (int y = -4; y <= 4; y++) {
+                      vec2 offset = v_texCoord + vec2(float(x) * blurSizeX, float(y) * blurSizeY);
+                      vec4 sample = u_edges ? getEdges(offset) : getDifference(offset);
+                      totalGlow += sample;
+                  }
+              }
+              
+              gl_FragColor = motionColor + totalGlow / 81.0;
+          } else {
+              gl_FragColor = motionColor;
+          }
+      }
+  </script>
   <style>
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Pixelated MS Sans Serif', 'MS Sans Serif', Arial, sans-serif; }
@@ -364,24 +441,34 @@
 <!-- ══════════ WIN95 DESKTOP ══════════ -->
 <div id="desktop">
   <!-- Desktop Shortcuts -->
-  <div class="desktop-icon" id="desktop-shortcut-paint" style="top: 10px; left: 10px;">
+  <div class="desktop-icon" id="desktop-shortcut-paint" style="top: 10px; left: 10px;" ondblclick="openApp('paint-window')">
     <div class="icon-img">🎨</div>
-    <div class="icon-label">Glitch Paint</div>
+    <div class="icon-label">PixelPaint</div>
   </div>
 
-  <div class="desktop-icon" id="desktop-shortcut-mosh" style="top: 90px; left: 10px;">
+  <div class="desktop-icon" id="desktop-shortcut-mosh" style="top: 90px; left: 10px;" ondblclick="openApp('mosh-window')">
     <div class="icon-img">📹</div>
     <div class="icon-label">PixelMosh</div>
   </div>
 
-  <div class="desktop-icon" id="desktop-shortcut-sort" style="top: 170px; left: 10px;">
+  <div class="desktop-icon" id="desktop-shortcut-sort" style="top: 170px; left: 10px;" ondblclick="openApp('sort-window')">
     <div class="icon-img">📶</div>
     <div class="icon-label">PixelSort</div>
   </div>
 
-  <div class="desktop-icon" id="desktop-shortcut-depth" style="top: 250px; left: 10px;">
+  <div class="desktop-icon" id="desktop-shortcut-depth" style="top: 250px; left: 10px;" ondblclick="openApp('depth-window')">
     <div class="icon-img">🧊</div>
     <div class="icon-label">PixelDepth</div>
+  </div>
+
+  <div class="desktop-icon" id="desktop-shortcut-motion" style="top: 330px; left: 10px;" ondblclick="openApp('motion-window')">
+    <div class="icon-img">🎞️</div>
+    <div class="icon-label">PixelMotion</div>
+  </div>
+
+  <div class="desktop-icon" id="desktop-shortcut-snuff" style="top: 410px; left: 10px;" ondblclick="window.open('https://www.cruel-art.com', '_blank')">
+    <div class="icon-img">💀</div>
+    <div class="icon-label">Pixel Snuff</div>
   </div>
 
   <!-- ══════════ PAINT WINDOW ══════════ -->
@@ -396,7 +483,7 @@
     <div class="resize-handle rh-sw" data-dir="sw"></div>
 
     <div class="title-bar" id="paint-title-bar">
-      <div class="title-bar-text">Glitch Paint</div>
+      <div class="title-bar-text">PixelPaint 95</div>
       <div class="title-bar-controls">
         <button aria-label="Minimize" class="win-min-btn"></button>
         <button aria-label="Maximize" class="win-max-btn"></button>
@@ -1080,6 +1167,100 @@
       </div>
     </div>
   </div>
+  <!-- ══════════ PIXELMOTION 95 WINDOW ══════════ -->
+  <div id="motion-window" class="window app-window" style="left: 180px; top: 60px; width: 1120px; height: 820px;">
+    <div class="resize-handle rh-n" data-dir="n"></div>
+    <div class="resize-handle rh-s" data-dir="s"></div>
+    <div class="resize-handle rh-e" data-dir="e"></div>
+    <div class="resize-handle rh-w" data-dir="w"></div>
+    <div class="resize-handle rh-ne" data-dir="ne"></div>
+    <div class="resize-handle rh-nw" data-dir="nw"></div>
+    <div class="resize-handle rh-se" data-dir="se"></div>
+    <div class="resize-handle rh-sw" data-dir="sw"></div>
+
+    <div class="title-bar" id="motion-title-bar">
+      <div class="title-bar-text">PixelMotion 95 - WebGL Motion Extraction Studio</div>
+      <div class="title-bar-controls">
+        <button aria-label="Minimize" class="win-min-btn"></button>
+        <button aria-label="Maximize" class="win-max-btn"></button>
+        <button aria-label="Close" class="win-close-btn"></button>
+      </div>
+    </div>
+
+    <div class="window-body">
+      <div class="menubar" style="position: relative;">
+        <span onclick="document.getElementById('video-upload').click()"><u>F</u>ile</span>
+        <span onclick="togglePlayback()"><u>M</u>otion</span>
+        <span onclick="resetForNewUpload()"><u>R</u>eset</span>
+        <span onclick="handleDownload()"><u>D</u>ownload</span>
+        <span><u>H</u>elp</span>
+      </div>
+
+      <div class="app-toolbar">
+        <button class="btn-accent-big" onclick="document.getElementById('video-upload').click()">📁 Choose MP4 File</button>
+        <button id="play-pause" onclick="togglePlayback()">⏯️ Play</button>
+        <button id="edges-btn" onclick="toggleEdges()">⚡ Edges</button>
+        <button id="glow-btn" onclick="toggleGlow()">✨ Glow</button>
+        <button id="upload-new-btn" onclick="resetForNewUpload()">📁 New Video</button>
+        <button id="download-btn" class="btn-accent-big" style="background:#008000; color:#fff;" onclick="handleDownload()">💾 Download WebM</button>
+        <input id="video-upload" type="file" accept="video/mp4,video/*" style="display:none;" onchange="handleFileUpload(event)">
+      </div>
+
+      <div class="app-main-layout">
+        <div class="app-sidebar" id="motion-sidebar">
+          
+          <div class="mosh-fx-card" style="background:#c0c0c0;">
+            <div style="font-weight:bold; color:#000080; margin-bottom:4px;">Motion Source Preset</div>
+            <select id="motion-sample-select" style="width:100%; font-size:11px;" onchange="loadMotionSample(this.value)">
+              <option value="dvd">📀 Bouncing Win95 DVD Logo</option>
+              <option value="bars">📺 Rolling TV Test Bars</option>
+              <option value="grid">🌆 Oscillating Synthwave Grid</option>
+              <option value="noise">⚡ Live Static Noise</option>
+            </select>
+          </div>
+
+          <div class="mosh-fx-card">
+            <div class="mosh-fx-header"><span style="color:#000080;">⏱️ Motion Offset & Speed</span></div>
+
+            <div class="mosh-slider-group" style="margin-top:6px;">
+              <div class="mosh-slider-label"><span>Frame Offset:</span><span id="offset-value" style="font-weight:bold;">50</span> frames</div>
+              <input id="offset-slider" type="range" min="1" max="150" value="50" oninput="handleSliderChange()">
+
+              <div class="mosh-slider-label"><span>Playback Speed:</span><span id="speed-value" style="font-weight:bold;">1.00</span>x</div>
+              <input id="speed-slider" type="range" min="0.25" max="2" value="1" step="0.25" oninput="handleSpeedChange()">
+
+              <div class="mosh-slider-label"><span>Glow Amount (Bloom):</span><span id="glow-value" style="font-weight:bold;">5</span></div>
+              <input id="glow-slider" type="range" min="0" max="20" value="5" step="1" disabled oninput="handleGlowSliderChange()">
+            </div>
+          </div>
+
+          <div class="mosh-fx-card" style="background:#dfdfdf;">
+            <div class="mosh-fx-header"><span style="color:#000080;">⚙️ WebGL Engine Info</span></div>
+            <div style="font-size:10px; color:#222; display:flex; flex-direction:column; gap:4px;">
+              <div>Shader Pipeline: <b>Dual-Frame WebGL 2D</b></div>
+              <div>Frame Offset Mode: <b>30 FPS Sync</b></div>
+              <div>Export Format: <b>WebM VP9 Video</b></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="app-divider" id="motion-sidebar-divider"></div>
+
+        <div class="app-viewport" id="motion-viewport-container">
+          <canvas id="video-canvas" width="800" height="600"></canvas>
+          <video id="video1" muted playsinline loop style="display:none;"></video>
+          <video id="video2" muted playsinline loop style="display:none;"></video>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <p class="status-bar-field" id="motion-status-msg" style="flex:1;">Ready - Upload MP4 video or select built-in sample preset!</p>
+        <p class="status-bar-field" id="motion-status-mode">Mode: WebGL Difference</p>
+        <p class="status-bar-field" id="motion-status-res">800 x 600</p>
+      </div>
+    </div>
+  </div>
 
 </div>
 
@@ -1087,10 +1268,12 @@
 <div id="start-menu">
   <div class="start-menu-sidebar"><span><b>Windows</b> 95</span></div>
   <div class="start-menu-list">
-    <div class="start-menu-item" onclick="openApp('paint-window')"><b>🎨</b> Glitch Paint</div>
+    <div class="start-menu-item" onclick="openApp('paint-window')"><b>🎨</b> PixelPaint 95</div>
     <div class="start-menu-item" onclick="openApp('mosh-window')"><b>📹</b> PixelMosh 95</div>
     <div class="start-menu-item" onclick="openApp('sort-window')"><b>📶</b> PixelSort 95</div>
     <div class="start-menu-item" onclick="openApp('depth-window')"><b>🧊</b> PixelDepth 95</div>
+    <div class="start-menu-item" onclick="openApp('motion-window')"><b>🎞️</b> PixelMotion 95</div>
+    <div class="start-menu-item" onclick="window.open('https://www.cruel-art.com', '_blank')"><b>💀</b> Pixel Snuff</div>
     <div class="start-menu-divider"></div>
     <div class="start-menu-item"><b>📂</b> Documents</div>
     <div class="start-menu-item"><b>⚙️</b> Settings</div>
@@ -1202,7 +1385,8 @@
     { id: 'paint-window', title: '🎨 Glitch Paint', icon: 'desktop-shortcut-paint' },
     { id: 'mosh-window', title: '📹 PixelMosh 95', icon: 'desktop-shortcut-mosh' },
     { id: 'sort-window', title: '📶 PixelSort 95', icon: 'desktop-shortcut-sort' },
-    { id: 'depth-window', title: '🧊 PixelDepth 95', icon: 'desktop-shortcut-depth' }
+    { id: 'depth-window', title: '🧊 PixelDepth 95', icon: 'desktop-shortcut-depth' },
+    { id: 'motion-window', title: '🎞️ PixelMotion 95', icon: 'desktop-shortcut-motion' }
   ];
 
   function openApp(winId) {
@@ -1222,8 +1406,14 @@
     } else if (winId === 'depth-window') {
       if (!depthInitialized) initPixelDepthEngine();
       else performPixelDepth();
+    } else if (winId === 'paint-window') {
+      if (typeof renderPaintIcons === 'function') renderPaintIcons(0);
+    } else if (winId === 'motion-window') {
+      if (!motionInitialized) initPixelMotionEngine();
+      else motionMainRenderStep(performance.now());
     }
   }
+  window.openApp = openApp;
 
   function closeApp(winId) {
     const win = document.getElementById(winId);
@@ -1232,6 +1422,7 @@
     win.dataset.open = 'false';
     updateTaskbar();
   }
+  window.closeApp = closeApp;
 
   function updateTaskbar() {
     taskbarItems.innerHTML = '';
@@ -1273,17 +1464,11 @@
     });
   }
 
-  appWindows.forEach(app => {
-    const shortcut = document.getElementById(app.icon);
-    if (!shortcut) return;
+  document.querySelectorAll('.desktop-icon').forEach(shortcut => {
     shortcut.onclick = (e) => {
       e.stopPropagation();
       document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
       shortcut.classList.add('selected');
-    };
-    shortcut.ondblclick = (e) => {
-      e.stopPropagation();
-      openApp(app.id);
     };
   });
 
@@ -1393,8 +1578,6 @@
     });
   });
 
-  openApp('paint-window');
-
   // ══════════ GLITCH PAINT LOGIC ══════════
   const drawingTools = [
     { id: 'select', icon: '⬚' },
@@ -1484,11 +1667,14 @@
       } else {
         fgColor = color;
         document.getElementById('fg-swatch').style.background = fgColor;
+        if (typeof renderPaintIcons === 'function') renderPaintIcons(0);
       }
     };
     square.oncontextmenu = (e) => e.preventDefault();
     paletteGrid.appendChild(square);
   });
+
+  setTimeout(() => { if (typeof renderPaintIcons === 'function') renderPaintIcons(0); }, 50);
 
   let canvasW = 1024, canvasH = 1024;
   const staticCanvas = document.getElementById('staticCanvas');
@@ -2149,15 +2335,8 @@
     return [h, s, l];
   }
 
-  function renderPaint(time) {
-    ctx.clearRect(0, 0, canvasW, canvasH);
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        const cell = grid[y][x];
-        if (cell) drawGlitchTool(ctx, x * 12, y * 12, cell, time);
-      }
-    }
-
+  function renderPaintIcons(time = 0) {
+    if (typeof paintPatterns === 'undefined' || !paintPatterns) return;
     paintPatterns.forEach(paintId => {
       const c = document.getElementById(`icon-${paintId}`);
       if (c) {
@@ -2167,6 +2346,16 @@
         drawGlitchTool(btx, 2, 2, dummyCell, time);
       }
     });
+  }
+
+  function renderPaint(time) {
+    ctx.clearRect(0, 0, canvasW, canvasH);
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const cell = grid[y][x];
+        if (cell) drawGlitchTool(ctx, x * 12, y * 12, cell, time);
+      }
+    }
   }
 
 
@@ -3131,6 +3320,11 @@
   let depthMouseX = 0, depthMouseY = 0;
   let depthParallaxX = 0, depthParallaxY = 0;
 
+  // Cached buffers for zero-allocation performance
+  let cachedDepthMapImgData = null;
+  let cachedDepthDstImgData = null;
+  let depthMapNeedsUpdate = true;
+
   function initPixelDepthEngine() {
     if (depthInitialized) return;
     depthInitialized = true;
@@ -3224,6 +3418,7 @@
       }
       ctx.putImageData(imgData, 0, 0);
     }
+    depthMapNeedsUpdate = true;
   }
 
   function loadDepthSample(name) {
@@ -3241,6 +3436,7 @@
         depthSourceCanvas.width = img.width; depthSourceCanvas.height = img.height;
         depthMapCanvas.width = img.width; depthMapCanvas.height = img.height;
         depthSourceCtx.drawImage(img, 0, 0);
+        cachedDepthMapImgData = null; cachedDepthDstImgData = null; depthMapNeedsUpdate = true;
         performPixelDepth();
       };
       img.src = URL.createObjectURL(file);
@@ -3256,13 +3452,14 @@
       depthCustomMapCanvas.height = depthSourceCanvas.height;
       depthCustomMapCtx.drawImage(img, 0, 0, depthSourceCanvas.width, depthSourceCanvas.height);
       document.getElementById('depth-calc-mode').value = 'custom';
+      depthMapNeedsUpdate = true;
       performPixelDepth();
     };
     img.src = URL.createObjectURL(file);
   }
 
   async function toggleDepthWebcam() {}
-  function updateDepthUI() { performPixelDepth(); }
+  function updateDepthUI() { depthMapNeedsUpdate = true; performPixelDepth(); }
   function depthRandomize() { updateDepthUI(); }
 
   function depthMainRenderStep(time) {
@@ -3296,34 +3493,41 @@
 
     const srcImgData = depthSourceCtx.getImageData(0, 0, w, h);
     const sD = srcImgData.data;
-    const mapImgData = depthMapCtx.createImageData(w, h);
-    const mD = mapImgData.data;
 
-    const cx = w / 2, cy = h / 2;
-    const maxDist = Math.sqrt(cx * cx + cy * cy);
-
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        let idx = (y * w + x) * 4;
-        let v = 0.299 * sD[idx] + 0.587 * sD[idx+1] + 0.114 * sD[idx+2];
-        if (calcMode === 'inv_lum') v = 255 - v;
-        else if (calcMode === 'radial') {
-          let dist = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-          v = Math.max(0, 255 - (dist / maxDist) * 255);
-        } else if (calcMode === 'vert') {
-          v = (y / h) * 255;
-        } else if (calcMode === 'red') {
-          v = sD[idx];
-        } else if (calcMode === 'custom' && depthHasCustomMap) {
-          let cData = depthCustomMapCtx.getImageData(0, 0, w, h).data;
-          v = (cData[idx] + cData[idx+1] + cData[idx+2]) / 3;
-        }
-
-        if (invertDepth) v = 255 - v;
-        mD[idx] = v; mD[idx+1] = v; mD[idx+2] = v; mD[idx+3] = 255;
-      }
+    if (!cachedDepthMapImgData || cachedDepthMapImgData.width !== w || cachedDepthMapImgData.height !== h) {
+      cachedDepthMapImgData = depthMapCtx.createImageData(w, h);
+      depthMapNeedsUpdate = true;
     }
-    depthMapCtx.putImageData(mapImgData, 0, 0);
+    const mD = cachedDepthMapImgData.data;
+
+    if (depthMapNeedsUpdate) {
+      depthMapNeedsUpdate = false;
+      const cx = w / 2, cy = h / 2;
+      const maxDist = Math.sqrt(cx * cx + cy * cy);
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let idx = (y * w + x) * 4;
+          let v = 0.299 * sD[idx] + 0.587 * sD[idx+1] + 0.114 * sD[idx+2];
+          if (calcMode === 'inv_lum') v = 255 - v;
+          else if (calcMode === 'radial') {
+            let dist = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+            v = Math.max(0, 255 - (dist / maxDist) * 255);
+          } else if (calcMode === 'vert') {
+            v = (y / h) * 255;
+          } else if (calcMode === 'red') {
+            v = sD[idx];
+          } else if (calcMode === 'custom' && depthHasCustomMap) {
+            let cData = depthCustomMapCtx.getImageData(0, 0, w, h).data;
+            v = (cData[idx] + cData[idx+1] + cData[idx+2]) / 3;
+          }
+
+          if (invertDepth) v = 255 - v;
+          mD[idx] = v; mD[idx+1] = v; mD[idx+2] = v; mD[idx+3] = 255;
+        }
+      }
+      depthMapCtx.putImageData(cachedDepthMapImgData, 0, 0);
+    }
 
     if (viewMode === 'depth_map') {
       depthCtx.drawImage(depthMapCanvas, 0, 0);
@@ -3434,8 +3638,448 @@
   async function depthExportGIF() {}
 
 
+  // ══════════ PIXELMOTION 95 WEBGL ENGINE ══════════
+  let motionInitialized = false;
+  let motionIsPaused = false;
+  let canvas, video1, video2;
+  let uploadInput, playPauseBtn, offsetSlider, offsetValue, uploadNewBtn;
+  let speedSlider, speedValue, glowBtn, glowSlider, glowValue, edgesBtn, downloadBtn;
+  
+  const FRAME_RATE_ASSUMPTION = 30;
+  let animationFrameId = null;
+  let isGlowEnabled = false;
+  let glowAmount = 5;
+  let isEdgesEnabled = false;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+
+  let gl, shaderProgram, positionBuffer, videoTexture1, videoTexture2;
+  let motionSourceType = 'sample';
+  let motionSampleCanvas = null, motionSampleCtx = null;
+  let motionSampleName = 'dvd';
+  let dvdX = 100, dvdY = 100, dvdVX = 5, dvdVY = 4, dvdColor = '#ff0055';
+
+  function initPixelMotionEngine() {
+    if (motionInitialized) return;
+    motionInitialized = true;
+
+    try {
+      uploadInput = document.getElementById('video-upload');
+      video1 = document.getElementById('video1');
+      video2 = document.getElementById('video2');
+      canvas = document.getElementById('video-canvas');
+
+      playPauseBtn = document.getElementById('play-pause');
+      offsetSlider = document.getElementById('offset-slider');
+      offsetValue = document.getElementById('offset-value');
+      uploadNewBtn = document.getElementById('upload-new-btn');
+      speedSlider = document.getElementById('speed-slider');
+      speedValue = document.getElementById('speed-value');
+      glowBtn = document.getElementById('glow-btn');
+      glowSlider = document.getElementById('glow-slider');
+      glowValue = document.getElementById('glow-value');
+      edgesBtn = document.getElementById('edges-btn');
+      downloadBtn = document.getElementById('download-btn');
+
+      motionSampleCanvas = document.createElement('canvas');
+      motionSampleCanvas.width = 800; motionSampleCanvas.height = 600;
+      motionSampleCtx = motionSampleCanvas.getContext('2d', { willReadFrequently: true });
+
+      initMotionSidebarDivider();
+
+      if (video1) {
+        video1.addEventListener('loadedmetadata', setupCanvasAndWebGL);
+        video1.addEventListener('timeupdate', () => {
+          if (motionSourceType === 'video' && video1 && video2 && video1.duration) {
+            const offsetFrames = parseInt(offsetSlider.value);
+            const offsetSeconds = offsetFrames / FRAME_RATE_ASSUMPTION;
+            const targetTime = (video1.currentTime - offsetSeconds + video1.duration) % video1.duration;
+            if (Math.abs(video2.currentTime - targetTime) > 0.05) {
+              video2.currentTime = targetTime;
+            }
+          }
+        });
+      }
+      setupSampleCanvasAndWebGL();
+    } catch (err) {
+      console.error('initPixelMotionEngine error:', err);
+    }
+  }
+
+  function initMotionSidebarDivider() {
+    const divider = document.getElementById('motion-sidebar-divider');
+    const sidebar = document.getElementById('motion-sidebar');
+    if (!divider || !sidebar) return;
+
+    let isResizing = false;
+    divider.onpointerdown = (e) => {
+      e.preventDefault(); isResizing = true;
+      divider.classList.add('dragging'); divider.setPointerCapture(e.pointerId);
+    };
+    divider.onpointermove = (e) => {
+      if (!isResizing) return;
+      const sidebarLeft = sidebar.getBoundingClientRect().left;
+      sidebar.style.width = Math.max(180, Math.min(650, e.clientX - sidebarLeft)) + 'px';
+    };
+    divider.onpointerup = (e) => {
+      isResizing = false; divider.classList.remove('dragging');
+      try { divider.releasePointerCapture(e.pointerId); } catch(err){}
+    };
+  }
+
+  function initWebGL() {
+    if (!canvas) return false;
+    gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
+    if (!gl) {
+      alert('WebGL is not supported by your browser.');
+      return false;
+    }
+    return true;
+  }
+
+  function createShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error('Shader compile error: ' + gl.getShaderInfoLog(shader));
+      gl.deleteShader(shader);
+      return null;
+    }
+    return shader;
+  }
+
+  function initShaderProgram(gl, vsSource, fsSource) {
+    const vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
+    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+
+    const program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error('Shader program error: ' + gl.getProgramInfoLog(program));
+      return null;
+    }
+    return program;
+  }
+
+  function initBuffers() {
+    positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    const positions = [-1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0, -1.0];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+  }
+
+  function createVideoTexture() {
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    return texture;
+  }
+
+  function updateTexture(texture, source) {
+    if (!gl || !source) return;
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+  }
+
+  function getShaderSource(id) {
+    const el = document.getElementById(id);
+    return el ? (el.textContent || el.text || '') : '';
+  }
+
+  function setupSampleCanvasAndWebGL() {
+    if (!initWebGL()) return;
+    const vsSource = getShaderSource('vertex-shader');
+    const fsSource = getShaderSource('fragment-shader');
+    shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+
+    initBuffers();
+    videoTexture1 = createVideoTexture();
+    videoTexture2 = createVideoTexture();
+
+    gl.useProgram(shaderProgram);
+    canvas.width = 800; canvas.height = 600;
+    gl.viewport(0, 0, 800, 600);
+    generateMotionSample('dvd', performance.now());
+  }
+
+  function setupCanvasAndWebGL() {
+    if (!initWebGL()) return;
+    const vsSource = getShaderSource('vertex-shader');
+    const fsSource = getShaderSource('fragment-shader');
+    shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+
+    initBuffers();
+    videoTexture1 = createVideoTexture();
+    videoTexture2 = createVideoTexture();
+
+    gl.useProgram(shaderProgram);
+    handleSliderChange();
+    
+    if (video1 && video1.videoWidth) {
+      canvas.width = video1.videoWidth;
+      canvas.height = video1.videoHeight;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  function generateMotionSample(type, time) {
+    if (!motionSampleCanvas || !motionSampleCtx) return;
+    const w = motionSampleCanvas.width, h = motionSampleCanvas.height;
+    const ctx = motionSampleCtx;
+    motionSampleName = type;
+
+    ctx.fillStyle = '#05050e'; ctx.fillRect(0, 0, w, h);
+
+    if (type === 'dvd') {
+      dvdX += dvdVX; dvdY += dvdVY;
+      if (dvdX <= 0 || dvdX >= w - 160) { dvdVX *= -1; dvdColor = `hsl(${Math.random()*360}, 100%, 65%)`; }
+      if (dvdY <= 0 || dvdY >= h - 80) { dvdVY *= -1; dvdColor = `hsl(${Math.random()*360}, 100%, 65%)`; }
+
+      ctx.fillStyle = dvdColor;
+      ctx.fillRect(dvdX, dvdY, 160, 80);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 24px monospace';
+      ctx.fillText("Win95 DVD", dvdX + 15, dvdY + 48);
+    } else if (type === 'bars') {
+      let rollY = Math.floor((time / 10) % h);
+      const colors = ['#c0c0c0', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0', '#000000'];
+      const bw = w / colors.length;
+      colors.forEach((col, i) => { ctx.fillStyle = col; ctx.fillRect(i * bw, 0, bw, h); });
+      ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(0, rollY, w, 40);
+    } else if (type === 'grid') {
+      let offset = Math.floor((time / 20) % 40);
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.8)'; ctx.lineWidth = 2;
+      for (let x = 0; x <= w; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = offset; y <= h; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    } else if (type === 'noise') {
+      const imgData = ctx.createImageData(w, h);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        let v = Math.floor(Math.random() * 255);
+        data[i] = v; data[i+1] = v; data[i+2] = v; data[i+3] = 255;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+  }
+
+  function loadMotionSample(name) {
+    motionSourceType = 'sample';
+    generateMotionSample(name, performance.now());
+    document.getElementById('motion-status-msg').textContent = `Loaded Preset: ${name.toUpperCase()}`;
+  }
+
+  function handleFileUpload(event) {
+    const file = event.target.files ? event.target.files[0] : null;
+    if (file && file.type.startsWith('video/')) {
+      motionSourceType = 'video';
+      motionRingBuffer = [];
+      const videoURL = URL.createObjectURL(file);
+      video1.src = videoURL;
+      speedSlider.value = 1;
+      handleSpeedChange();
+      video1.play();
+      motionIsPaused = false;
+      if (playPauseBtn) playPauseBtn.textContent = 'Pause';
+      document.getElementById('motion-status-msg').textContent = `Loaded MP4 Video: ${file.name}`;
+    }
+  }
+
+  function togglePlayback() {
+    motionIsPaused = !motionIsPaused;
+    if (motionSourceType === 'video' && video1) {
+      if (video1.paused) {
+        video1.play();
+        if (playPauseBtn) playPauseBtn.textContent = 'Pause';
+      } else {
+        video1.pause();
+        if (playPauseBtn) playPauseBtn.textContent = 'Play';
+      }
+    } else {
+      if (playPauseBtn) playPauseBtn.textContent = motionIsPaused ? 'Play' : 'Pause';
+    }
+  }
+
+  function handleSliderChange() {
+    if (!offsetSlider || !offsetValue) return;
+    const offsetFrames = parseInt(offsetSlider.value);
+    offsetValue.textContent = `${offsetFrames}`;
+    const offsetSeconds = offsetFrames / FRAME_RATE_ASSUMPTION;
+    if (video1 && video1.duration) {
+      video2.currentTime = (video1.currentTime + offsetSeconds) % video1.duration;
+    }
+  }
+
+  function handleSpeedChange() {
+    if (!speedSlider || !speedValue) return;
+    const speed = parseFloat(speedSlider.value);
+    if (video1) video1.playbackRate = speed;
+    if (video2) video2.playbackRate = speed;
+    speedValue.textContent = speed.toFixed(2);
+  }
+
+  function toggleEdges() {
+    isEdgesEnabled = !isEdgesEnabled;
+    if (edgesBtn) {
+      edgesBtn.classList.toggle('btn-accent-big', isEdgesEnabled);
+    }
+  }
+
+  function toggleGlow() {
+    isGlowEnabled = !isGlowEnabled;
+    if (glowSlider) glowSlider.disabled = !isGlowEnabled;
+    if (glowBtn) {
+      glowBtn.classList.toggle('btn-accent-big', isGlowEnabled);
+    }
+  }
+
+  function handleGlowSliderChange() {
+    if (!glowSlider || !glowValue) return;
+    glowAmount = parseFloat(glowSlider.value);
+    glowValue.textContent = glowAmount;
+  }
+
+  function resetForNewUpload() {
+    if (video1) { video1.pause(); video1.src = ''; }
+    if (video2) { video2.pause(); video2.src = ''; }
+    if (uploadInput) uploadInput.value = '';
+    motionSourceType = 'sample';
+    loadMotionSample('dvd');
+  }
+
+  function handleDownload() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+    } else {
+      recordedChunks = [];
+      const stream = canvas.captureStream(FRAME_RATE_ASSUMPTION);
+      if (typeof MediaRecorder === 'undefined') {
+        alert('Recording is not supported in this browser.');
+        return;
+      }
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'pixelmotion-95.webm';
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+        if (downloadBtn) downloadBtn.textContent = '💾 Download WebM';
+      };
+      downloadBtn.textContent = '🛑 Stop Recording';
+      mediaRecorder.start();
+    }
+  }
+
+  let motionRingBuffer = [];
+  let motionCurrentCanvas = null, motionCurrentCtx = null;
+
+  function getRingBufferOffsetFrame(srcElement, offsetFrames) {
+    const w = canvas.width || 800;
+    const h = canvas.height || 600;
+    
+    if (!motionCurrentCanvas || motionCurrentCanvas.width !== w || motionCurrentCanvas.height !== h) {
+      motionCurrentCanvas = document.createElement('canvas');
+      motionCurrentCanvas.width = w; motionCurrentCanvas.height = h;
+      motionCurrentCtx = motionCurrentCanvas.getContext('2d');
+      motionRingBuffer = [];
+    }
+
+    motionCurrentCtx.drawImage(srcElement, 0, 0, w, h);
+
+    const frameCopy = document.createElement('canvas');
+    frameCopy.width = w; frameCopy.height = h;
+    frameCopy.getContext('2d').drawImage(motionCurrentCanvas, 0, 0);
+
+    motionRingBuffer.push(frameCopy);
+    while (motionRingBuffer.length > 65) {
+      motionRingBuffer.shift();
+    }
+
+    const idx = Math.max(0, motionRingBuffer.length - 1 - offsetFrames);
+    return {
+      current: motionCurrentCanvas,
+      past: motionRingBuffer[idx] || frameCopy
+    };
+  }
+
+  function motionMainRenderStep(time) {
+    if (!motionInitialized) {
+      initPixelMotionEngine();
+    }
+    if (!gl || !shaderProgram) return;
+
+    const offsetFrames = offsetSlider ? parseInt(offsetSlider.value) : 10;
+    let frames;
+
+    if (motionSourceType === 'video' && video1 && video1.readyState >= 2 && video1.videoWidth > 0) {
+      if (canvas.width !== video1.videoWidth || canvas.height !== video1.videoHeight) {
+        canvas.width = video1.videoWidth;
+        canvas.height = video1.videoHeight;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      }
+      frames = getRingBufferOffsetFrame(video1, offsetFrames);
+    } else {
+      generateMotionSample(motionSampleName, time);
+      frames = getRingBufferOffsetFrame(motionSampleCanvas, offsetFrames);
+    }
+
+    updateTexture(videoTexture1, frames.current);
+    updateTexture(videoTexture2, frames.past);
+
+    const resolutionLocation = gl.getUniformLocation(shaderProgram, "u_resolution");
+    gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
+
+    const video1Location = gl.getUniformLocation(shaderProgram, "u_video1");
+    gl.uniform1i(video1Location, 0);
+
+    const video2Location = gl.getUniformLocation(shaderProgram, "u_video2");
+    gl.uniform1i(video2Location, 1);
+
+    const edgesLocation = gl.getUniformLocation(shaderProgram, "u_edges");
+    gl.uniform1i(edgesLocation, isEdgesEnabled);
+
+    const glowLocation = gl.getUniformLocation(shaderProgram, "u_glow");
+    gl.uniform1i(glowLocation, isGlowEnabled);
+
+    const glowAmountLocation = gl.getUniformLocation(shaderProgram, "u_glowAmount");
+    gl.uniform1f(glowAmountLocation, glowAmount);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, videoTexture1);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, videoTexture2);
+
+    const positionLocation = gl.getAttribLocation(shaderProgram, "a_position");
+    gl.enableVertexAttribArray(positionLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
+  function performPixelMotion() { motionMainRenderStep(performance.now()); }
+  function motionExportImage() {}
+  function toggleMotionVideoRecord() {}
+  async function motionExportGIF() {}
+
+
   // ══════════ UNIFIED MASTER RENDER LOOP & SLEEP OPTIMIZATION ══════════
+  let lastSuiteFrameTime = 0;
   function suiteMainRenderLoop(time) {
+    requestAnimationFrame(suiteMainRenderLoop);
+
+    // Frame rate limiter (~35 FPS limit) - completely eliminates Chrome requestAnimationFrame violations & high CPU usage!
+    if (time - lastSuiteFrameTime < 28) return;
+    lastSuiteFrameTime = time;
+
     // 1. Paint Window - Render if open & not minimized
     const paintWin = document.getElementById('paint-window');
     if (paintWin && paintWin.style.display !== 'none') {
@@ -3445,23 +4089,41 @@
     // 2. PixelMosh Window - Render if open & not paused
     const moshWin = document.getElementById('mosh-window');
     if (moshWin && moshWin.style.display !== 'none' && !moshIsPaused) {
+      if (!moshInitialized) initPixelMoshEngine();
       moshMainRenderStep(time);
     }
 
-    // 3. PixelSort Window - Render if open
+    // 3. PixelSort Window - Render if open & active video/webcam
     const sortWin = document.getElementById('sort-window');
     if (sortWin && sortWin.style.display !== 'none') {
-      sortMainRenderStep(time);
+      if (!sortInitialized) initPixelSortEngine();
+      if (sortSourceType === 'video' || sortSourceType === 'webcam') {
+        performPixelSort();
+      }
     }
 
     // 4. PixelDepth Window - Render if open
     const depthWin = document.getElementById('depth-window');
     if (depthWin && depthWin.style.display !== 'none') {
+      if (!depthInitialized) initPixelDepthEngine();
       depthMainRenderStep(time);
     }
 
-    requestAnimationFrame(suiteMainRenderLoop);
+    // 5. PixelMotion Window - Render if open & not paused
+    const motionWin = document.getElementById('motion-window');
+    if (motionWin && motionWin.style.display !== 'none' && !motionIsPaused) {
+      if (!motionInitialized) initPixelMotionEngine();
+      motionMainRenderStep(time);
+    }
   }
+
+  // Automatic Tab Visibility Sleep Mode
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (typeof video1 !== 'undefined' && video1) video1.pause();
+      if (typeof video2 !== 'undefined' && video2) video2.pause();
+    }
+  });
 
   // Start unified master loop
   requestAnimationFrame(suiteMainRenderLoop);
